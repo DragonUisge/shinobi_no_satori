@@ -64,10 +64,10 @@ local quest_rewards = {
             "Those who wear it feel the rage of a thousand",
             "silent warriors flowing through their strikes.",
             "",
-            "§ Your blows shall carry the wrath of the fallen.",
+            "§ Your hits shall carry the wrath of the fallen.",
         },
         hud_text = "A fragment of forgotten power binds itself to your soul...\n" ..
-            "The armor whispers of battles yet to come.\n" ..
+            "The armour whispers of battles yet to come.\n" ..
             "You feel your strikes grow heavier — deadlier.",
     },
     {
@@ -81,7 +81,8 @@ local quest_rewards = {
             "defying the very walls that trapped mortal men.",
             "",
             "§ Walls bend to your will. Darkness reveals its secrets.",
-            "§ Hold [Jump] near a wall while sprinting to ascend.",
+            "§ Face a wall and press [Sneak]+[Right Click] to walk upon it.",
+            "§ Press [Jump] to release and return to the ground.",
         },
         hud_text = "The veil of the unseen falls upon you...\n" ..
             "Your feet find grip where none should exist.\n" ..
