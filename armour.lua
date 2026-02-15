@@ -8,29 +8,29 @@
 -- ============================================================
 -- Tracking tables for abilities
 -- ============================================================
-local chestplate_users = {}   -- players wearing the chestplate (bonus damage)
-local headwear_users = {}     -- players wearing the headwear (wall-run + night vision)
-local hakama_users = {}       -- players wearing the hakama (water walk)
+local chestplate_users    = {} -- players wearing the chestplate (bonus damage)
+local headwear_users      = {} -- players wearing the headwear (wall-run + night vision)
+local hakama_users        = {} -- players wearing the hakama (water walk)
 
 -- ============================================================
 -- Settings
 -- ============================================================
-local S = minetest.settings
+local S                   = minetest.settings
 
-local HIDE_FROM_CREATIVE = S:get_bool("shinobi_hide_from_creative", true)
+local HIDE_FROM_CREATIVE  = S:get_bool("shinobi_hide_from_creative", true)
 local ARMOUR_HEAL         = tonumber(S:get("shinobi_armour_heal")) or 18
-local DAMAGE_MULTIPLIER  = tonumber(S:get("shinobi_damage_multiplier")) or 1.8
-local WALL_WALK_SPEED    = tonumber(S:get("shinobi_wall_walk_speed")) or 4.0
-local NIGHT_VISION_RATIO = tonumber(S:get("shinobi_night_vision_ratio")) or 0.6
-local SPEED_BOOST        = tonumber(S:get("shinobi_speed_boost")) or 0.6
+local DAMAGE_MULTIPLIER   = tonumber(S:get("shinobi_damage_multiplier")) or 1.8
+local WALL_WALK_SPEED     = tonumber(S:get("shinobi_wall_walk_speed")) or 4.0
+local NIGHT_VISION_RATIO  = tonumber(S:get("shinobi_night_vision_ratio")) or 0.6
+local SPEED_BOOST         = tonumber(S:get("shinobi_speed_boost")) or 0.6
 local WATER_WALK_INTERVAL = 0.1
-local WALL_WALK_INTERVAL  = 0.05  -- tighter tick for smooth wall movement
-local WALL_GRAVITY        = 18    -- pull toward surface (blocks/s²)
-local SURFACE_STICK_DIST  = 1.0   -- how far to check for adjacent surface
-local SURFACE_CHECK_DIST  = 1.5   -- how far to look for surface under feet
-local WALL_ACTIVATE_RANGE = 1.5   -- how far from a wall activation works
+local WALL_WALK_INTERVAL  = 0.05 -- tighter tick for smooth wall movement
+local WALL_GRAVITY        = 18   -- pull toward surface (blocks/s²)
+local SURFACE_STICK_DIST  = 1.0  -- how far to check for adjacent surface
+local SURFACE_CHECK_DIST  = 1.5  -- how far to look for surface under feet
+local WALL_ACTIVATE_RANGE = 1.5  -- how far from a wall activation works
 
-local creative_group = HIDE_FROM_CREATIVE and 1 or 0
+local creative_group      = HIDE_FROM_CREATIVE and 1 or 0
 
 -- ============================================================
 -- Chestplate of Shinobi — increased melee damage
@@ -132,24 +132,24 @@ armor:register_armor("shinobi_no_satori:epic_hakama", {
 -- normal: unit vector pointing AWAY from the surface the player walks on
 -- floor = {0,1,0}, ceiling = {0,-1,0}, walls = ±x / ±z
 local wall_walkers = {}
-local prev_place   = {}  -- track previous RMB state for edge detection
+local prev_place   = {} -- track previous RMB state for edge detection
 
 -- 6 possible surface normals (axis-aligned only)
-local NORMALS = {
-    floor   = { x =  0, y =  1, z =  0 },
-    ceiling = { x =  0, y = -1, z =  0 },
-    north   = { x =  0, y =  0, z =  1 },
-    south   = { x =  0, y =  0, z = -1 },
-    east    = { x =  1, y =  0, z =  0 },
-    west    = { x = -1, y =  0, z =  0 },
+local NORMALS      = {
+    floor   = { x = 0, y = 1, z = 0 },
+    ceiling = { x = 0, y = -1, z = 0 },
+    north   = { x = 0, y = 0, z = 1 },
+    south   = { x = 0, y = 0, z = -1 },
+    east    = { x = 1, y = 0, z = 0 },
+    west    = { x = -1, y = 0, z = 0 },
 }
 
 -- ---- Vector helpers ----
-local function vec_add(a, b)    return { x = a.x + b.x, y = a.y + b.y, z = a.z + b.z } end
-local function vec_sub(a, b)    return { x = a.x - b.x, y = a.y - b.y, z = a.z - b.z } end
-local function vec_mul(v, s)    return { x = v.x * s,    y = v.y * s,    z = v.z * s    } end
-local function vec_dot(a, b)    return a.x * b.x + a.y * b.y + a.z * b.z end
-local function vec_len(v)       return math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) end
+local function vec_add(a, b) return { x = a.x + b.x, y = a.y + b.y, z = a.z + b.z } end
+local function vec_sub(a, b) return { x = a.x - b.x, y = a.y - b.y, z = a.z - b.z } end
+local function vec_mul(v, s) return { x = v.x * s, y = v.y * s, z = v.z * s } end
+local function vec_dot(a, b) return a.x * b.x + a.y * b.y + a.z * b.z end
+local function vec_len(v) return math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) end
 local function vec_norm(v)
     local l = vec_len(v)
     if l < 0.001 then return { x = 0, y = 0, z = 0 } end
@@ -166,9 +166,11 @@ local function vec_eq(a, b) return a.x == b.x and a.y == b.y and a.z == b.z end
 
 -- Check if a position has a walkable node
 local function is_walkable(pos)
-    local node = minetest.get_node({ x = math.floor(pos.x),
-                                     y = math.floor(pos.y),
-                                     z = math.floor(pos.z) })
+    local node = minetest.get_node({
+        x = math.floor(pos.x),
+        y = math.floor(pos.y),
+        z = math.floor(pos.z)
+    })
     local def = minetest.registered_nodes[node.name]
     return def and def.walkable
 end
@@ -178,12 +180,12 @@ end
 local function find_adjacent_surface(pos, exclude_floor)
     -- Check all 6 directions: look for a walkable node adjacent to player
     local checks = {
-        { dir = { x =  0, y = -1, z =  0 }, normal = NORMALS.floor   },
-        { dir = { x =  0, y =  1, z =  0 }, normal = NORMALS.ceiling },
-        { dir = { x =  0, y =  0, z = -1 }, normal = NORMALS.north   },  -- wall to south, normal points north
-        { dir = { x =  0, y =  0, z =  1 }, normal = NORMALS.south   },
-        { dir = { x = -1, y =  0, z =  0 }, normal = NORMALS.east    },
-        { dir = { x =  1, y =  0, z =  0 }, normal = NORMALS.west    },
+        { dir = { x = 0, y = -1, z = 0 },   normal = NORMALS.floor },
+        { dir = { x = 0, y = 1, z = 0 },    normal = NORMALS.ceiling },
+        { dir = { x = 0, y = 0, z = -1 },   normal = NORMALS.north },   -- wall to south, normal points north
+        { dir = { x = 0, y = 0, z = 1 },    normal = NORMALS.south },
+        { dir = { x = -1, y = 0, z = 0 },   normal = NORMALS.east },
+        { dir = { x = 1, y = 0, z = 0 },    normal = NORMALS.west },
     }
     for _, c in ipairs(checks) do
         if not (exclude_floor and vec_eq(c.normal, NORMALS.floor)) then
@@ -265,7 +267,7 @@ minetest.register_entity("shinobi_no_satori:wall_ghost", {
 })
 
 -- Spawn or update the ghost entity for a wall-walking player
-local active_ghosts = {}  -- name -> ObjectRef of ghost
+local active_ghosts = {} -- name -> ObjectRef of ghost
 
 local function spawn_ghost(player)
     local name = player:get_player_name()
@@ -287,8 +289,8 @@ local function spawn_ghost(player)
             local at = armor.textures[name]
             if at then
                 tex = { at.skin or "character.png",
-                        at.armor or "blank.png",
-                        at.wielditem or "blank.png" }
+                    at.armor or "blank.png",
+                    at.wielditem or "blank.png" }
             end
         end
         ghost:set_properties({ textures = tex })
@@ -355,7 +357,7 @@ local function engage_wall_walk(player, normal)
     -- Teleport player slightly into the wall so surface checks pass
     local pos = player:get_pos()
     local stick_pos = vec_add(pos, vec_mul(normal, -0.3))
-    stick_pos.y = stick_pos.y + 0.5  -- lift off the floor
+    stick_pos.y = stick_pos.y + 0.5 -- lift off the floor
     player:set_pos(stick_pos)
     -- Disable gravity and jump but keep speed (we control movement via add_velocity)
     player:set_physics_override({ gravity = 0, jump = 0 })
@@ -416,7 +418,7 @@ minetest.register_globalstep(function(dtime)
                 -- Check if surface still exists (check at player center and above/below)
                 local inv_normal = vec_mul(ww.normal, -1)
                 local check1 = vec_add(pos, vec_mul(inv_normal, SURFACE_CHECK_DIST))
-                local check2 = vec_add(vec_add(pos, {x=0,y=0.8,z=0}), vec_mul(inv_normal, SURFACE_CHECK_DIST))
+                local check2 = vec_add(vec_add(pos, { x = 0, y = 0.8, z = 0 }), vec_mul(inv_normal, SURFACE_CHECK_DIST))
                 local surface_ok = is_walkable(check1) or is_walkable(check2)
 
                 if not surface_ok then
@@ -457,9 +459,9 @@ minetest.register_globalstep(function(dtime)
                 local forward, right = get_surface_frame(player, ww.normal)
                 local move = { x = 0, y = 0, z = 0 }
 
-                if controls.up    then move = vec_add(move, forward) end
-                if controls.down  then move = vec_sub(move, forward) end
-                if controls.left  then move = vec_sub(move, right) end
+                if controls.up then move = vec_add(move, forward) end
+                if controls.down then move = vec_sub(move, forward) end
+                if controls.left then move = vec_sub(move, right) end
                 if controls.right then move = vec_add(move, right) end
 
                 move = vec_norm(move)
@@ -522,7 +524,6 @@ minetest.register_globalstep(function(dtime)
                     local yaw = player:get_look_horizontal()
                     ghost:set_rotation(normal_to_rotation(ww.normal, yaw))
                 end
-
             else
                 -- ---- NOT wall-walking: check for activation ----
                 -- Activation: holding sneak + just pressed RMB (place) while facing a wall
@@ -589,7 +590,7 @@ minetest.register_globalstep(function(dtime)
             if in_water and controls.aux1 and (controls.up or controls.left or controls.right) then
                 -- Sprinting on water: cancel gravity
                 if not wall_walkers[name] then
-                    player:set_physics_override({gravity = 0})
+                    player:set_physics_override({ gravity = 0 })
                 end
                 local vel = player:get_velocity()
                 if vel and vel.y < 0 then
@@ -598,7 +599,7 @@ minetest.register_globalstep(function(dtime)
             else
                 -- Restore normal gravity (only if not wall-walking)
                 if not wall_walkers[name] then
-                    player:set_physics_override({gravity = 1})
+                    player:set_physics_override({ gravity = 1 })
                 end
             end
         end

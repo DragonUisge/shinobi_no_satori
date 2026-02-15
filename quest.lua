@@ -6,7 +6,7 @@ local worldpath = minetest.get_worldpath()
 local quest_progress_file = worldpath .. "/shinobi_quest_progress.json"
 local quest_data = {}
 
-local BOSS_HP = tonumber(minetest.settings:get("shinobi_boss_hp")) or 1
+local BOSS_HP = tonumber(minetest.settings:get("shinobi_boss_hp")) or 1000
 
 -- Helper function to save quest progress
 local function save_progress()
@@ -81,8 +81,8 @@ local quest_rewards = {
             "defying the very walls that trapped mortal men.",
             "",
             "§ Walls bend to your will. Darkness reveals its secrets.",
-            "§ Face a wall and press [Sneak]+[Right Click] to walk upon it.",
-            "§ Press [Jump] to release and return to the ground.",
+            "§ Face a wall and press [Sneak]+[Right Click] to run up it.",
+            "§ Press [Jump] to backflip off, or reach the top.",
         },
         hud_text = "The veil of the unseen falls upon you...\n" ..
             "Your feet find grip where none should exist.\n" ..
