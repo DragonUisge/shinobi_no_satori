@@ -81,8 +81,7 @@ local quest_rewards = {
             "defying the very walls that trapped mortal men.",
             "",
             "§ Walls bend to your will. Darkness reveals its secrets.",
-            "§ Face a wall and press [Sneak]+[Right Click] to run up it.",
-            "§ Press [Jump] to backflip off, or reach the top.",
+            "§ Face a wall and press [Sneak]+[Right Click] to go through it.",
         },
         hud_text = "The veil of the unseen falls upon you...\n" ..
             "Your feet find grip where none should exist.\n" ..
