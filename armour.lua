@@ -12,9 +12,20 @@ local chestplate_users = {}   -- players wearing the chestplate (bonus damage)
 local headwear_users = {}     -- players wearing the headwear (wall-run + night vision)
 local hakama_users = {}       -- players wearing the hakama (water walk)
 
-local DAMAGE_MULTIPLIER = 1.8 -- 80% bonus damage
-local WALL_RUN_SPEED = 6      -- upward velocity when wall-running
+-- ============================================================
+-- Settings
+-- ============================================================
+local S = minetest.settings
+
+local HIDE_FROM_CREATIVE = S:get_bool("shinobi_hide_from_creative", true)
+local ARMOR_HEAL         = tonumber(S:get("shinobi_armor_heal")) or 18
+local DAMAGE_MULTIPLIER  = tonumber(S:get("shinobi_damage_multiplier")) or 1.8
+local WALL_RUN_SPEED     = tonumber(S:get("shinobi_wall_run_speed")) or 6.0
+local NIGHT_VISION_RATIO = tonumber(S:get("shinobi_night_vision_ratio")) or 0.6
+local SPEED_BOOST        = tonumber(S:get("shinobi_speed_boost")) or 0.6
 local WATER_WALK_INTERVAL = 0.1
+
+local creative_group = HIDE_FROM_CREATIVE and 1 or 0
 
 -- ============================================================
 -- Chestplate of Shinobi — increased melee damage
@@ -26,8 +37,9 @@ armor:register_armor("shinobi_no_satori:epic_chestplate", {
     preview = "shinobi_chestplate_preview.png",
     groups = {
         armor_torso = 1,
-        armor_heal = 18,
+        armor_heal = ARMOR_HEAL,
         armor_use = 0, -- unbreakable
+        not_in_creative_inventory = creative_group,
     },
     armor_groups = { fleshy = 10 },
     on_equip = function(player, index, stack)
@@ -63,15 +75,16 @@ armor:register_armor("shinobi_no_satori:epic_headwear", {
     preview = "shinobi_headwear_preview.png",
     groups = {
         armor_head = 1,
-        armor_heal = 18,
+        armor_heal = ARMOR_HEAL,
         armor_use = 0,
+        not_in_creative_inventory = creative_group,
     },
     armor_groups = { fleshy = 8 },
     on_equip = function(player, index, stack)
         local name = player:get_player_name()
         headwear_users[name] = true
         -- Night vision: override day/night ratio to always bright
-        player:override_day_night_ratio(0.6)
+        player:override_day_night_ratio(NIGHT_VISION_RATIO)
     end,
     on_unequip = function(player, index, stack)
         local name = player:get_player_name()
@@ -91,9 +104,10 @@ armor:register_armor("shinobi_no_satori:epic_hakama", {
     preview = "shinobi_hakama_preview.png",
     groups = {
         armor_legs = 1,
-        armor_heal = 18,
+        armor_heal = ARMOR_HEAL,
         armor_use = 0,
-        physics_speed = 0.6, -- +60% speed
+        physics_speed = SPEED_BOOST,
+        not_in_creative_inventory = creative_group,
     },
     armor_groups = { fleshy = 8 },
     on_equip = function(player, index, stack)

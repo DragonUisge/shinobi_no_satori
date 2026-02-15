@@ -6,6 +6,8 @@ local worldpath = minetest.get_worldpath()
 local quest_progress_file = worldpath .. "/shinobi_quest_progress.json"
 local quest_data = {}
 
+local BOSS_HP = tonumber(minetest.settings:get("shinobi_boss_hp")) or 1
+
 -- Helper function to save quest progress
 local function save_progress()
     local file = io.open(quest_progress_file, "w")
@@ -117,7 +119,7 @@ local function spawn_boss(player_name)
         local player = minetest.get_player_by_name(player_name)
         if dragon_entity and player then
             dragon_entity._target = player
-            dragon_entity.hp = 1
+            dragon_entity.hp = BOSS_HP
         end
     end
     pdata.stage = "fighting_boss"
