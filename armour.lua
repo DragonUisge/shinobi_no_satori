@@ -23,6 +23,8 @@ local DAMAGE_MULTIPLIER   = tonumber(S:get("shinobi_damage_multiplier")) or 1.8
 local NIGHT_VISION_RATIO  = tonumber(S:get("shinobi_night_vision_ratio")) or 0.6
 local SPEED_BOOST         = tonumber(S:get("shinobi_speed_boost")) or 0.6
 local WATER_WALK_INTERVAL = 0.1
+local SET_BONUS           = S:get("shinobi_set_bonus") or "both"
+local SCOUT_COOLDOWN      = tonumber(S:get("shinobi_set_bonus_scout_cooldown")) or 20.0
 
 local creative_group      = HIDE_FROM_CREATIVE and 1 or 0
 
@@ -44,10 +46,12 @@ armor:register_armor("shinobi_no_satori:epic_chestplate", {
     on_equip = function(player, index, stack)
         local name = player:get_player_name()
         chestplate_users[name] = true
+        check_full_set(player)
     end,
     on_unequip = function(player, index, stack)
         local name = player:get_player_name()
         chestplate_users[name] = nil
+        clear_full_set(player)
     end,
 })
 
@@ -84,12 +88,14 @@ armor:register_armor("shinobi_no_satori:epic_headwear", {
         headwear_users[name] = true
         -- Night vision: override day/night ratio to always bright
         player:override_day_night_ratio(NIGHT_VISION_RATIO)
+        check_full_set(player)
     end,
     on_unequip = function(player, index, stack)
         local name = player:get_player_name()
         headwear_users[name] = nil
         -- Remove night vision
         player:override_day_night_ratio(nil)
+        clear_full_set(player)
     end,
 })
 
@@ -112,17 +118,280 @@ armor:register_armor("shinobi_no_satori:epic_hakama", {
     on_equip = function(player, index, stack)
         local name = player:get_player_name()
         hakama_users[name] = true
+        check_full_set(player)
     end,
     on_unequip = function(player, index, stack)
         local name = player:get_player_name()
         hakama_users[name] = nil
+        clear_full_set(player)
     end,
 })
+
+-- ============================================================
+-- Full-set bonus
+-- ============================================================
+local full_set_users = {}   -- name → true when all 3 pieces worn
+local scout_cooldowns = {}  -- name → last activation timestamp
+local scout_active = {}     -- name → true while scout camera is running
+local active_scout_decoys = {}  -- name → ObjectRef
+local scout_data = {}           -- name → { orig_textures, decoy_pos }
+local scout_hp_cache = {}       -- entity_id → hp, for mob damage watchdog
+
+-- Ghost entity for the scout: the decoy body left behind
+minetest.register_entity("shinobi_no_satori:scout_decoy", {
+    initial_properties = {
+        visual = "mesh",
+        mesh = "3d_armor_character.b3d",
+        textures = { "character.png", "blank.png", "blank.png" },
+        visual_size = { x = 1, y = 1 },
+        -- Physical so it rests on the ground; collisionbox sized for a prone body
+        physical = true,
+        collisionbox = { -0.35, 0.0, -0.7, 0.35, 0.4, 0.7 },
+        collide_with_objects = false,
+        pointable = true,   -- must be true to receive on_punch
+        static_save = false,
+        glow = 0,
+        backface_culling = false,
+        use_texture_alpha = true,
+        makes_footstep_sound = false,
+    },
+    _owner = nil,
+    on_activate = function(self, staticdata, dtime_s)
+        -- Lay animation: frames 162-166 in the standard character model
+        self.object:set_animation({ x = 162, y = 166 }, 15, 0, true)
+        self.object:set_velocity({ x = 0, y = 0, z = 0 })
+    end,
+    on_step = function(self, dtime)
+        if not self._owner then self.object:remove(); return end
+        -- Keep still and track position so end_scout can teleport back even if
+        -- the entity gets unloaded while the shadow is far away.
+        self.object:set_velocity({ x = 0, y = 0, z = 0 })
+        local p = self.object:get_pos()
+        if p then
+            local data = scout_data[self._owner]
+            if data then data.decoy_pos = vector.copy(p) end
+        end
+    end,
+    on_deactivate = function(self, removal)
+        -- Entity is being unloaded (chunk leaving active range).
+        -- Final position is already stored by on_step; nothing extra needed.
+    end,
+    on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir)
+        -- Decoy was hit — burst particles then snap the shadow back.
+        local opos = self.object:get_pos()
+        if opos then
+            minetest.add_particlespawner({
+                amount     = 24,
+                time       = 0.4,
+                minpos     = vector.add(opos, vector.new(-0.4, 0.2, -0.4)),
+                maxpos     = vector.add(opos, vector.new( 0.4, 1.6,  0.4)),
+                minvel     = vector.new(-2, 1, -2),
+                maxvel     = vector.new( 2, 4,  2),
+                minexptime = 0.3,
+                maxexptime = 0.8,
+                minsize    = 1.0,
+                maxsize    = 2.5,
+                texture    = "shinobi_shadow_particle.png^[colorize:#000000:200",
+                glow       = 4,
+            })
+        end
+        if self._owner then
+            local owner_player = minetest.get_player_by_name(self._owner)
+            if owner_player and scout_active[self._owner] then
+                end_scout(owner_player)
+            end
+        end
+    end,
+})
+
+local function has_full_set(name)
+    return chestplate_users[name] and headwear_users[name] and hakama_users[name]
+end
+
+local function apply_full_set(player)
+    local name = player:get_player_name()
+    if full_set_users[name] then return end  -- already applied
+    full_set_users[name] = true
+
+    if SET_BONUS == "nameonly" then
+        player:set_nametag_attributes({ text = "", bgcolor = false })
+    elseif SET_BONUS == "invisible" then
+        player:set_properties({ visual_size = { x = 0, y = 0 } })
+    elseif SET_BONUS == "both" then
+        player:set_nametag_attributes({ text = "", bgcolor = false })
+        player:set_properties({ visual_size = { x = 0, y = 0 } })
+    end
+    -- "scout" has no passive effect; it is activated on keypress
+end
+
+local function remove_full_set(player)
+    local name = player:get_player_name()
+    if not full_set_users[name] then return end
+    full_set_users[name] = nil
+
+    player:set_nametag_attributes({ text = name, bgcolor = false })
+    player:set_properties({ visual_size = { x = 1, y = 1 } })
+
+    -- End any active scout session
+    if scout_active[name] then
+        end_scout(player)
+    end
+end
+
+-- Called from each armor on_equip / on_unequip
+function check_full_set(player)
+    local name = player:get_player_name()
+    if has_full_set(name) then
+        apply_full_set(player)
+    else
+        remove_full_set(player)
+    end
+end
+
+function clear_full_set(player)
+    remove_full_set(player)
+end
+
+-- ---- Scout camera ----
+function end_scout(player)
+    local name = player:get_player_name()
+    scout_active[name] = nil
+
+    -- Grab last known decoy position before destroying it
+    local return_pos
+    local data = scout_data[name]
+    if data then return_pos = data.decoy_pos end
+    if not return_pos then
+        -- Fallback: try the live entity
+        if active_scout_decoys[name] and active_scout_decoys[name]:get_pos() then
+            return_pos = active_scout_decoys[name]:get_pos()
+        end
+    end
+
+    -- Destroy decoy
+    if active_scout_decoys[name] and active_scout_decoys[name]:get_pos() then
+        active_scout_decoys[name]:remove()
+    end
+    active_scout_decoys[name] = nil
+
+    -- Teleport shadow back to where the decoy was lying
+    if return_pos then
+        player:set_pos(return_pos)
+    end
+
+    -- Restore player appearance and armor groups
+    if data and data.orig_textures then
+        player:set_properties({ textures = data.orig_textures })
+    end
+    if data and data.orig_armor_groups then
+        player:set_armor_groups(data.orig_armor_groups)
+    end
+    if armor and armor.update_player_visuals then
+        armor:update_player_visuals(player)
+    end
+    scout_data[name] = nil
+    player:hud_set_flags({ wield = true })
+end
+
+local function begin_scout(player)
+    local name = player:get_player_name()
+    if scout_active[name] then return end
+
+    local now = minetest.get_us_time() / 1e6
+    if scout_cooldowns[name] and (now - scout_cooldowns[name]) < SCOUT_COOLDOWN then
+        return
+    end
+    scout_cooldowns[name] = now
+    scout_active[name] = true
+
+    local pos = player:get_pos()
+
+    -- Spawn a decoy with the player's REAL skin + armor appearance
+    local decoy = minetest.add_entity(pos, "shinobi_no_satori:scout_decoy")
+    if decoy then
+        local ent = decoy:get_luaentity()
+        if ent then ent._owner = name end
+        local tex = { "character.png", "blank.png", "blank.png" }
+        if armor and armor.textures then
+            local at = armor.textures[name]
+            if at then
+                tex = { at.skin or "character.png",
+                        at.armor or "blank.png",
+                        at.wielditem or "blank.png" }
+            end
+        end
+        decoy:set_properties({ textures = tex })
+        -- Face the same direction as the player
+        decoy:set_yaw(player:get_look_horizontal())
+        active_scout_decoys[name] = decoy
+    end
+
+    -- Save current textures, beginning decoy pos, and armor groups,
+    -- then paint the player solid black with no armor protection.
+    local orig_props = player:get_properties()
+    scout_data[name] = {
+        orig_textures    = orig_props.textures,
+        orig_armor_groups = player:get_armor_groups(),
+        decoy_pos        = vector.copy(pos),
+    }
+
+    local black = "character.png^[colorize:#000000:255"
+    player:set_properties({ textures = { black } })
+    player:set_armor_groups({ fleshy = 100 })  -- no armor reduction
+    player:hud_set_flags({ wield = false })
+end
+
+-- ============================================================
+-- Scout action guards  (digging / placing / damage)
+-- ============================================================
+
+-- Prevent shadow from digging: re-place the node immediately after
+minetest.register_on_dignode(function(pos, oldnode, digger)
+    if not digger or not digger:is_player() then return end
+    local name = digger:get_player_name()
+    if not scout_active[name] then return end
+    -- Re-place the node and give back the item that was dug
+    minetest.set_node(pos, oldnode)
+    local inv = digger:get_inventory()
+    local drops = minetest.get_node_drops(oldnode.name, "")
+    for _, drop in ipairs(drops) do
+        if inv:room_for_item("main", drop) then
+            inv:remove_item("main", drop)
+        end
+    end
+end)
+
+-- Prevent shadow from placing: remove the placed node immediately
+minetest.register_on_placenode(function(pos, newnode, placer, oldnode, itemstack)
+    if not placer or not placer:is_player() then return end
+    local name = placer:get_player_name()
+    if not scout_active[name] then return end
+    minetest.set_node(pos, oldnode)
+    -- Give the item back
+    local inv = placer:get_inventory()
+    if inv then
+        inv:add_item("main", newnode.name)
+    end
+end)
+
+-- Prevent shadow from dealing damage to players
+minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, tool_capabilities, dir, damage)
+    if not hitter or not hitter:is_player() then return end
+    if scout_active[hitter:get_player_name()] then
+        return true  -- cancel the punch
+    end
+end)
+-- For non-player entities (mobs etc.) there is no equivalent callback;
+-- damage prevention is handled via the HP watchdog in globalstep below.
+
+-- Shadow takes damage normally but armor gives no protection
+-- (we override armor_groups in globalstep, so no cancel here)
 
 -- ============================================================
 -- Wall-phasing system (headwear ability)
 -- ============================================================
 local prev_place = {} -- RMB edge detection
+local prev_scout_key = {} -- Sneak+Jump edge detection for scout
 
 -- ---- Vector helpers ----
 local function vec_add(a, b) return { x = a.x + b.x, y = a.y + b.y, z = a.z + b.z } end
@@ -291,6 +560,63 @@ minetest.register_globalstep(function(dtime)
         local pos  = player:get_pos()
         if not pos then goto continue end
 
+        -- ========== FULL-SET BONUS: SCOUT ACTIVATION ==========
+        if SET_BONUS == "scout" and full_set_users[name] then
+            local controls = player:get_player_control()
+            local scout_key = controls.sneak and controls.jump
+            local was_scout_key = prev_scout_key[name] or false
+            if scout_key and not was_scout_key then
+                if scout_active[name] then
+                    end_scout(player)
+                else
+                    begin_scout(player)
+                end
+            end
+            prev_scout_key[name] = scout_key
+        end
+
+        -- ========== SCOUT: ENFORCE BLACK TEXTURE + BARE ARMOR ==========
+        -- 3d_armor may call update_player_visuals at any time; re-enforce
+        -- the black appearance and armor_groups every tick.
+        if scout_active[name] then
+            local black = "character.png^[colorize:#000000:255"
+            local props = player:get_properties()
+            if props.textures and props.textures[1] ~= black then
+                player:set_properties({ textures = { black } })
+            end
+            -- Ensure armor gives no protection while in shadow form
+            local ag = player:get_armor_groups()
+            if (ag.fleshy or 0) ~= 100 then
+                player:set_armor_groups({ fleshy = 100 })
+            end
+        end
+
+        -- ========== SCOUT: MOB HP WATCHDOG ==========
+        -- Cache HP of all entities within punch range of a scout player.
+        -- If any entity's HP dropped since last tick, restore it.
+        -- (register_on_punchplayer handles player targets; this covers mobs.)
+        if scout_active[name] then
+            local watched = {}
+            for _, obj in ipairs(minetest.get_objects_inside_radius(pos, 5)) do
+                if obj ~= player and not obj:is_player() then
+                    local id = tostring(obj)
+                    watched[id] = obj
+                    local hp = obj:get_hp()
+                    local cached = scout_hp_cache[id]
+                    if cached and hp < cached then
+                        obj:set_hp(cached)
+                    end
+                    scout_hp_cache[id] = obj:get_hp()
+                end
+            end
+            -- Evict cache entries no longer near this scout
+            for id, _ in pairs(scout_hp_cache) do
+                if not watched[id] then
+                    scout_hp_cache[id] = nil
+                end
+            end
+        end
+
         -- ========== WALL PHASING (headwear) ==========
         if headwear_users[name] then
             local controls  = player:get_player_control()
@@ -354,11 +680,22 @@ minetest.register_on_leaveplayer(function(player)
     chestplate_users[name] = nil
     headwear_users[name]   = nil
     hakama_users[name]     = nil
+    full_set_users[name]   = nil
+    scout_active[name]     = nil
+    scout_cooldowns[name]  = nil
+    scout_data[name]       = nil
     prev_place[name]       = nil
+    prev_scout_key[name]   = nil
     if active_ghosts[name] then
         if active_ghosts[name]:get_pos() then
             active_ghosts[name]:remove()
         end
         active_ghosts[name] = nil
+    end
+    if active_scout_decoys[name] then
+        if active_scout_decoys[name]:get_pos() then
+            active_scout_decoys[name]:remove()
+        end
+        active_scout_decoys[name] = nil
     end
 end)

@@ -38,7 +38,7 @@ shinobi_shuriken_range (Shuriken range) int 18 5 50
 shinobi_shuriken_damage (Shuriken damage) int 6 1 20
 
 # Duration of the freeze effect (seconds).
-shinobi_shuriken_freeze_time (Freeze duration) float 3.0 0.5 15.0
+shinobi_shuriken_freeze_time (Freeze duration) float 5.0 0.5 15.0
 
 # Duration of the burn effect (seconds).
 shinobi_shuriken_burn_time (Burn duration) float 4.0 0.5 15.0
@@ -48,3 +48,17 @@ shinobi_shuriken_hit_radius (Hit radius) float 1.8 0.5 5.0
 
 # Cooldown between throws (seconds).
 shinobi_shuriken_cooldown (Throw cooldown) float 1.0 0.0 5.0
+
+[Full set bonus]
+
+# Bonus granted when all three armour pieces are worn at the same time.
+# Options:
+#   nameonly   — the player's nametag is hidden from other players
+#   invisible  — the player's body becomes invisible to other players
+#   both       — both name and body are hidden
+#   scout      — activates a spy ghost: your decoy body stays in place
+#                while your shadow goes through the world; press Sneak+Jump to activate and return.
+shinobi_set_bonus (Full-set bonus mode) enum nameonly nameonly,invisible,both,scout
+
+# Cooldown between scout activations (seconds).
+shinobi_set_bonus_scout_cooldown (Scout cooldown) float 20.0 0.1 120.0
