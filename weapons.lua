@@ -197,7 +197,7 @@ end
 -- ============================================================
 minetest.register_entity("shinobi_no_satori:fire_shuriken", {
     initial_properties = {
-        visual            = "sprite",
+        visual            = "upright_sprite",
         textures           = { "shinobi_fire_shuriken.png" },
         visual_size        = { x = 0.5, y = 0.5 },
         physical           = false,
@@ -234,7 +234,7 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
 
         -- Spin the sprite
         self._spin = self._spin + dtime * 12  -- radians/s
-        self.object:set_yaw(self._spin)
+        self.object:set_rotation({ x = math.pi/2, y = self._spin, z = 0 })
 
         -- -------------------------------------------------------
         -- Movement: outward phase → returning phase
@@ -377,7 +377,7 @@ local shuriken_cooldown = {} -- player name → timestamp of last throw
 minetest.register_craftitem("shinobi_no_satori:fire_shuriken", {
     description      = "Shuriken of Fire",
     inventory_image  = "shinobi_fire_shuriken_inv.png",
-    stack_max        = 16,
+    stack_max        = 20,
 
     on_use = function(itemstack, player, pointed_thing)
         if not player or not player:is_player() then return end
@@ -425,7 +425,7 @@ minetest.register_craftitem("shinobi_no_satori:fire_shuriken", {
 -- ============================================================
 minetest.register_entity("shinobi_no_satori:ice_shuriken", {
     initial_properties = {
-        visual             = "sprite",
+        visual             = "upright_sprite",
         textures           = { "shinobi_ice_shuriken.png" },
         visual_size        = { x = 0.5, y = 0.5 },
         physical           = false,
@@ -461,7 +461,7 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
 
         -- Spin
         self._spin = self._spin + dtime * 12
-        self.object:set_yaw(self._spin)
+        self.object:set_rotation({ x = math.pi/2, y = self._spin, z = 0 })
 
         -- -------------------------------------------------------
         -- Movement (identical to normal shuriken)
@@ -587,7 +587,7 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
 minetest.register_craftitem("shinobi_no_satori:ice_shuriken", {
     description      = "Shuriken of Ice",
     inventory_image  = "shinobi_ice_shuriken_inv.png",
-    stack_max        = 16,
+    stack_max        = 20,
 
     on_use = function(itemstack, player, pointed_thing)
         if not player or not player:is_player() then return end
