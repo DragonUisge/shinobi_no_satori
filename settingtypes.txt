@@ -26,7 +26,25 @@ shinobi_night_vision_ratio (Night vision brightness) float 0.6 0.0 1.0
 # 0.6 = +60% speed.
 shinobi_speed_boost (Hakama speed boost) float 0.6 0.0 3.0
 
-[Boss]
+[Shuriken]
 
-# Dragon boss HP.
-shinobi_boss_hp (Boss HP) int 1 500 5000
+# Flight speed of the shuriken (blocks/s).
+shinobi_shuriken_speed (Shuriken speed) int 22 5 60
+
+# Maximum range before the shuriken turns back (blocks).
+shinobi_shuriken_range (Shuriken range) int 18 5 50
+
+# Punch damage dealt to entities on hit.
+shinobi_shuriken_damage (Shuriken damage) int 6 1 20
+
+# Duration of the freeze effect (seconds).
+shinobi_shuriken_freeze_time (Freeze duration) float 3.0 0.5 15.0
+
+# Duration of the burn effect (seconds).
+shinobi_shuriken_burn_time (Burn duration) float 4.0 0.5 15.0
+
+# Hit detection radius around the shuriken (blocks).
+shinobi_shuriken_hit_radius (Hit radius) float 1.8 0.5 5.0
+
+# Cooldown between throws (seconds).
+shinobi_shuriken_cooldown (Throw cooldown) float 1.0 0.0 5.0
