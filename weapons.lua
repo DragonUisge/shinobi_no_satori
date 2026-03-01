@@ -18,79 +18,141 @@ local SHURIKEN_HIT_RADIUS  = tonumber(S:get("shinobi_shuriken_hit_radius")) or 1
 local SHURIKEN_COOLDOWN    = tonumber(S:get("shinobi_shuriken_cooldown"))    or 1.0
 
 -- ============================================================
+-- Ice block visual entity
+-- ============================================================
+minetest.register_entity("shinobi_no_satori:ice_block", {
+    initial_properties = {
+        visual              = "cube",
+        textures            = {
+            "shinobi_ice_ent.png", "shinobi_ice_ent.png",
+            "shinobi_ice_ent.png", "shinobi_ice_ent.png",
+            "shinobi_ice_ent.png", "shinobi_ice_ent.png",
+        },
+        visual_size         = { x = 1, y = 2 },
+        physical            = false,
+        collide_with_objects = false,
+        pointable           = false,
+        static_save         = false,
+        use_texture_alpha   = true,
+        glow                = 8,
+    },
+    _target     = nil,   -- ObjectRef of the frozen entity
+    _center_y   = 0,     -- Y offset from target origin to block center
+
+    on_step = function(self, dtime)
+        -- Ice block stays put; just self-destruct if target is gone
+        -- (unfreeze_entity handles clean removal, this is a safety net)
+        if not self._target or not self._target:get_pos() then
+            self.object:remove()
+        end
+    end,
+})
+
+-- ============================================================
 -- Frozen-entity management
 -- ============================================================
 -- Stores original physics / velocity so we can restore them later.
-local frozen_entities = {}   -- objref hash → { timer, old_vel, old_props }
+local frozen_entities = {}   -- objref hash → { timer, glow, obj, ice_ent }
+
+local ZERO_VEL = { x = 0, y = 0, z = 0 }
 
 local function freeze_entity(obj)
     local id = obj:get_luaentity() and tostring(obj:get_luaentity()) or tostring(obj)
 
-    -- Don't stack freezes – just reset the timer
+    -- Already frozen: damage was already dealt by the caller, nothing else to do
     if frozen_entities[id] then
-        frozen_entities[id].timer = SHURIKEN_FREEZE_TIME
         return
     end
 
     local props = obj:get_properties()
-    local old_vel = obj:get_velocity() or vector.zero()
+    local glow  = props.glow or 0
 
-    -- Visual feedback: turn the mob icy-blue
-    local old_visual_size = props.visual_size
-    local glow = props.glow or 0
+    obj:set_properties({ glow = 12 })
+    obj:set_velocity(ZERO_VEL)
 
-    obj:set_properties({
-        glow = 12,
-    })
-    obj:set_velocity(vector.zero())
-
-    -- For creatura / mobs_redo, try to pause AI
+    -- Pause AI (creatura / mobs_redo)
     local lua = obj:get_luaentity()
     if lua then
-        -- creatura
         if lua._movement_data then
             lua._frozen_by_shuriken = true
         end
-        -- mobs_redo
         if lua.state then
             lua._old_state = lua.state
-            lua.state = "stand"
+            lua.state      = "stand"
         end
-        -- Prevent natural movement override
         if lua.set_velocity then
             lua._old_set_velocity = lua.set_velocity
-            lua.set_velocity = function() end
+            lua.set_velocity      = function() end
         end
     end
 
+    -- ---- Spawn ice-block entity sized to this entity's collisionbox ----
+    local cb       = props.collisionbox or { -0.5, 0, -0.5, 0.5, 1.8, 0.5 }
+    local w        = (cb[4] - cb[1])
+    local h        = (cb[5] - cb[2])
+    local d        = (cb[6] - cb[3])
+    local vs_x     = math.max(w, d) * 1.05
+    local vs_y     = h               * 1.05
+    local center_y = (cb[2] + cb[5]) / 2
+
+    local opos    = obj:get_pos()
+    local ice_ent = minetest.add_entity(
+        { x = opos.x, y = opos.y + center_y, z = opos.z },
+        "shinobi_no_satori:ice_block"
+    )
+    if ice_ent then
+        local ie = ice_ent:get_luaentity()
+        if ie then
+            ie._target   = obj
+            ie._center_y = center_y
+        end
+        ice_ent:set_properties({ visual_size = { x = vs_x, y = vs_y } })
+
+        -- Attach the ice block TO the mob (mob = parent) so the block follows
+        -- the mob without inheriting/distorting its visual_size.
+        -- Offset +center_y moves the block up to the collisionbox centre.
+        ice_ent:set_attach(obj, "", { x = 0, y = center_y * 10, z = 0 }, { x = 0, y = 0, z = 0 })
+    end
+
+    minetest.sound_play("shinobi_freeze", {
+        pos              = opos,
+        gain             = 1.0,
+        max_hear_distance = 16,
+    }, true)
+
     frozen_entities[id] = {
-        obj       = obj,
-        timer     = SHURIKEN_FREEZE_TIME,
-        old_vel   = old_vel,
-        glow      = glow,
+        obj     = obj,
+        timer   = SHURIKEN_FREEZE_TIME,
+        glow    = glow,
+        ice_ent = ice_ent,
     }
 end
 
 local function unfreeze_entity(id, data)
     local obj = data.obj
+
+    -- Detach and remove ice block (it is a child of the mob)
+    if data.ice_ent and data.ice_ent:get_pos() then
+        data.ice_ent:set_detach()
+        data.ice_ent:remove()
+    end
+
     if not obj or not obj:get_pos() then
         frozen_entities[id] = nil
         return
     end
 
-    obj:set_properties({
-        glow = data.glow,
-    })
+    obj:set_properties({ glow = data.glow })
 
     local lua = obj:get_luaentity()
     if lua then
         lua._frozen_by_shuriken = nil
         if lua._old_state then
-            lua.state = lua._old_state
+            lua.state      = lua._old_state
             lua._old_state = nil
         end
         if lua._old_set_velocity then
-            lua.set_velocity = lua._old_set_velocity
+            lua.set_velocity      = lua._old_set_velocity
             lua._old_set_velocity = nil
         end
     end
@@ -98,15 +160,14 @@ local function unfreeze_entity(id, data)
     frozen_entities[id] = nil
 end
 
--- Tick frozen timers
+-- Tick frozen timers; also keep velocity locked while frozen
 minetest.register_globalstep(function(dtime)
     for id, data in pairs(frozen_entities) do
         data.timer = data.timer - dtime
 
-        -- Keep velocity at zero while frozen
         local obj = data.obj
         if obj and obj:get_pos() then
-            obj:set_velocity(vector.zero())
+            obj:set_velocity(ZERO_VEL)
         end
 
         if data.timer <= 0 then
@@ -523,8 +584,10 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
                     damage_groups = { fleshy = SHURIKEN_DAMAGE },
                 }, vector.direction(pos, obj:get_pos()))
 
-                -- Freeze only
-                freeze_entity(obj)
+                -- Freeze only if the punch wasn't lethal
+                if obj:get_pos() then
+                    freeze_entity(obj)
+                end
 
                 -- Icy impact particles
                 local opos = obj:get_pos()
