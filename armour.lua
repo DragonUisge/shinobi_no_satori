@@ -65,7 +65,7 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
 end)
 
 -- ============================================================
--- Headwear of Shinobi — night vision + wall-running
+-- Headwear of Shinobi — night vision + something like noclip
 -- ============================================================
 armor:register_armor("shinobi_no_satori:epic_headwear", {
     description = "Headwear of Shinobi",
@@ -320,24 +320,25 @@ minetest.register_globalstep(function(dtime)
 
         -- ========== WATER WALKING (hakama) ==========
         if hakama_users[name] and do_wt then
-            local controls   = player:get_player_control()
-            local below      = { x = pos.x, y = pos.y - 0.3, z = pos.z }
-            local feet       = { x = pos.x, y = pos.y, z = pos.z }
-            local node_below = minetest.get_node(below)
-            local node_feet  = minetest.get_node(feet)
-            local def_below  = minetest.registered_nodes[node_below.name]
-            local def_feet   = minetest.registered_nodes[node_feet.name]
+            local controls = player:get_player_control()
 
-            local in_water   = (def_below and def_below.liquidtype ~= "none") or
-                (def_feet and def_feet.liquidtype ~= "none")
+            -- Detect water at feet level (small range around player base)
+            local function node_at(y_off)
+                local n = minetest.get_node({ x = pos.x, y = pos.y + y_off, z = pos.z })
+                local d = minetest.registered_nodes[n.name]
+                return d and d.liquidtype ~= "none"
+            end
+            local on_water = node_at(-0.1) or node_at(0.0) or node_at(0.3)
 
-            if in_water and controls.aux1 and (controls.up or controls.left or controls.right) then
-                -- Sprinting on water: cancel gravity
-                player:set_physics_override({ gravity = 0 })
+            local moving = controls.up or controls.down or controls.left or controls.right
+
+            if on_water and moving and controls.aux1 then
+                -- Pin the player to the water surface: cancel Y velocity entirely
                 local vel = player:get_velocity()
-                if vel and vel.y < 0 then
+                if vel and vel.y ~= 0 then
                     player:add_velocity({ x = 0, y = -vel.y, z = 0 })
                 end
+                player:set_physics_override({ gravity = 0 })
             else
                 player:set_physics_override({ gravity = 1 })
             end

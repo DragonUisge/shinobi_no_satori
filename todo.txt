@@ -1,2 +1,2 @@
-preview for armour
-enhance walking on/through walls
+preview for Armour
+ice shuriken fix
