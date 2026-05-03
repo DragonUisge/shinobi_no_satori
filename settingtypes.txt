@@ -10,6 +10,9 @@ shinobi_hide_from_creative (Hide armour from creative inventory) bool true
 # With all 3 pieces equipped the total is 3× this value.
 shinobi_armour_heal (Armour heal chance per piece) int 18 0 100
 
+# Armour colours. Options: cyan, orange. Default: cyan.
+shinobi_armour_colour (Armour colour) enum cyan cyan,orange
+
 [Abilities]
 
 # Damage multiplier for the chestplate.
@@ -48,6 +51,12 @@ shinobi_shuriken_hit_radius (Hit radius) float 1.8 0.5 5.0
 
 # Cooldown between throws (seconds).
 shinobi_shuriken_cooldown (Throw cooldown) float 1.0 0.0 5.0
+
+# Behaviour when the shuriken hits a wall or reaches its maximum range.
+#   drop   — (default) sticks in a wall for ~2 s then drops as an item;
+#            or falls to the ground if range is reached mid-air
+#   return — boomerang: curves back and returns to the thrower's inventory
+shinobi_shuriken_mode (Shuriken flight mode) enum drop drop,return
 
 [Full set bonus]
 

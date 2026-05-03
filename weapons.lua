@@ -1,8 +1,10 @@
 -- Shinobi no Satori – Weapons
--- Fire Shuriken: boomerang throwing star that ignites enemies
--- Ice  Shuriken: boomerang throwing star that freezes enemies
---   • Fly outward, then curve back to the thrower
---   • Return to player's inventory on arrival (or drop if inv full)
+-- Fire Shuriken: throwing star that ignites enemies
+-- Ice  Shuriken: throwing star that freezes enemies
+--   Flight mode is controlled by the 'shinobi_shuriken_mode' setting:
+--   • "drop"   — (default) sticks in a wall for ~2 s then drops as item;
+--              or falls to the ground if range is reached in mid-air
+--   • "return" — boomerang: curves back and returns to the thrower's inventory
 
 local S = minetest.settings
 
@@ -16,6 +18,7 @@ local SHURIKEN_FREEZE_TIME = tonumber(S:get("shinobi_shuriken_freeze_time")) or 
 local SHURIKEN_BURN_TIME   = tonumber(S:get("shinobi_shuriken_burn_time"))   or 4.0
 local SHURIKEN_HIT_RADIUS  = tonumber(S:get("shinobi_shuriken_hit_radius")) or 1.8
 local SHURIKEN_COOLDOWN    = tonumber(S:get("shinobi_shuriken_cooldown"))    or 1.0
+local SHURIKEN_MODE        = S:get("shinobi_shuriken_mode") or "drop"
 
 -- ============================================================
 -- Ice block visual entity
@@ -272,7 +275,10 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
     _origin      = nil,   -- launch position
     _dir         = nil,   -- initial direction (normalised)
     _dist        = 0,     -- distance travelled so far
-    _returning   = false, -- true once we passed the apex
+    _returning   = false, -- true once we passed the apex ("return" mode only)
+    _stopped     = false, -- true once shuriken is embedded/dropped
+    _hit_wall    = false, -- true if stopped by hitting a wall (vs. range reached mid-air)
+    _stop_timer  = 0,     -- time since stopping
     _hit_set     = nil,   -- already-hit entities
     _age         = 0,
     _spin        = 0,     -- visual rotation accumulator
@@ -287,15 +293,50 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
 
         self._age = self._age + dtime
 
-        -- Safety: remove if alive too long (stuck, lost thrower, etc.)
-        if self._age > 8 then
+        -- Safety: remove if alive too long (flight only; stopped state has its own timer)
+        if not self._stopped and self._age > 8 then
             self.object:remove()
             return
         end
 
-        -- Spin the sprite
-        self._spin = self._spin + dtime * 12  -- radians/s
-        self.object:set_rotation({ x = math.pi/2, y = self._spin, z = 0 })
+        -- Spin the sprite (only while in flight)
+        if not self._stopped then
+            self._spin = self._spin + dtime * 12  -- radians/s
+            self.object:set_rotation({ x = math.pi/2, y = self._spin, z = 0 })
+        end
+
+        -- -------------------------------------------------------
+        -- Stopped state ("drop" mode)
+        -- -------------------------------------------------------
+        if self._stopped then
+            self._stop_timer = self._stop_timer + dtime
+            if self._hit_wall then
+                -- Embedded in wall: stay still, drop as item after 2 s
+                self.object:set_velocity(ZERO_VEL)
+                if self._stop_timer >= 2.0 then
+                    minetest.add_item(pos, ItemStack(self._item_name))
+                    self.object:remove()
+                end
+            else
+                -- Mid-air: simulate gravity until landing
+                local vel = self.object:get_velocity()
+                local new_vy = math.max((vel and vel.y or 0) - 20 * dtime, -20)
+                self.object:set_velocity({ x = 0, y = new_vy, z = 0 })
+                local node_below = minetest.get_node({ x = pos.x, y = pos.y - 0.6, z = pos.z })
+                if minetest.registered_nodes[node_below.name]
+                   and minetest.registered_nodes[node_below.name].walkable then
+                    minetest.add_item(pos, ItemStack(self._item_name))
+                    self.object:remove()
+                    return
+                end
+                -- Safety fallback after 8 s
+                if self._stop_timer > 8 then
+                    minetest.add_item(pos, ItemStack(self._item_name))
+                    self.object:remove()
+                end
+            end
+            return
+        end
 
         -- -------------------------------------------------------
         -- Movement: outward phase → returning phase
@@ -310,9 +351,18 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
             -- Fly along initial direction
             self._dist = self._dist + SHURIKEN_SPEED * dtime
             if self._dist >= SHURIKEN_RANGE then
-                self._returning = true
+                if SHURIKEN_MODE == "return" then
+                    self._returning = true
+                else
+                    -- Reached max range mid-air: start falling immediately
+                    self._stopped  = true
+                    self._hit_wall = false
+                    self.object:set_velocity({ x = 0, y = -4, z = 0 })
+                end
             end
-            self.object:set_velocity(vector.multiply(self._dir, SHURIKEN_SPEED))
+            if not self._stopped then
+                self.object:set_velocity(vector.multiply(self._dir, SHURIKEN_SPEED))
+            end
         else
             -- Curve back to the thrower
             local tpos = thrower:get_pos()
@@ -391,16 +441,23 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
         end
 
         -- -------------------------------------------------------
-        -- Wall collision — bounce into return phase
+        -- Wall collision
         -- -------------------------------------------------------
-        if not self._returning then
+        if not self._returning and not self._stopped then
             local vel = self.object:get_velocity()
             if vel then
                 local ahead = vector.add(pos, vector.multiply(vector.normalize(vel), 0.5))
                 local node  = minetest.get_node(ahead)
                 if minetest.registered_nodes[node.name]
                    and minetest.registered_nodes[node.name].walkable then
-                    self._returning = true
+                    if SHURIKEN_MODE == "return" then
+                        self._returning = true
+                    else
+                        -- Stick into wall
+                        self._stopped  = true
+                        self._hit_wall = true
+                        self.object:set_velocity(ZERO_VEL)
+                    end
                 end
             end
         end
@@ -501,6 +558,9 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
     _dir         = nil,
     _dist        = 0,
     _returning   = false,
+    _stopped     = false, -- true once shuriken is embedded/dropped
+    _hit_wall    = false, -- true if stopped by hitting a wall (vs. range reached mid-air)
+    _stop_timer  = 0,     -- time since stopping
     _hit_set     = nil,
     _age         = 0,
     _spin        = 0,
@@ -515,17 +575,53 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
         if not pos then self.object:remove(); return end
 
         self._age = self._age + dtime
-        if self._age > 8 then
+        -- Safety: remove if alive too long (flight only; stopped state has its own timer)
+        if not self._stopped and self._age > 8 then
             self.object:remove()
             return
         end
 
-        -- Spin
-        self._spin = self._spin + dtime * 12
-        self.object:set_rotation({ x = math.pi/2, y = self._spin, z = 0 })
+        -- Spin the sprite (only while in flight)
+        if not self._stopped then
+            self._spin = self._spin + dtime * 12
+            self.object:set_rotation({ x = math.pi/2, y = self._spin, z = 0 })
+        end
 
         -- -------------------------------------------------------
-        -- Movement (identical to normal shuriken)
+        -- Stopped state ("drop" mode)
+        -- -------------------------------------------------------
+        if self._stopped then
+            self._stop_timer = self._stop_timer + dtime
+            if self._hit_wall then
+                -- Embedded in wall: stay still, drop as item after 2 s
+                self.object:set_velocity(ZERO_VEL)
+                if self._stop_timer >= 2.0 then
+                    minetest.add_item(pos, ItemStack(self._item_name))
+                    self.object:remove()
+                end
+            else
+                -- Mid-air: simulate gravity until landing
+                local vel = self.object:get_velocity()
+                local new_vy = math.max((vel and vel.y or 0) - 20 * dtime, -20)
+                self.object:set_velocity({ x = 0, y = new_vy, z = 0 })
+                local node_below = minetest.get_node({ x = pos.x, y = pos.y - 0.6, z = pos.z })
+                if minetest.registered_nodes[node_below.name]
+                   and minetest.registered_nodes[node_below.name].walkable then
+                    minetest.add_item(pos, ItemStack(self._item_name))
+                    self.object:remove()
+                    return
+                end
+                -- Safety fallback after 8 s
+                if self._stop_timer > 8 then
+                    minetest.add_item(pos, ItemStack(self._item_name))
+                    self.object:remove()
+                end
+            end
+            return
+        end
+
+        -- -------------------------------------------------------
+        -- Movement
         -- -------------------------------------------------------
         local thrower = self._thrower
         if not thrower or not thrower:is_player() then
@@ -536,9 +632,18 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
         if not self._returning then
             self._dist = self._dist + SHURIKEN_SPEED * dtime
             if self._dist >= SHURIKEN_RANGE then
-                self._returning = true
+                if SHURIKEN_MODE == "return" then
+                    self._returning = true
+                else
+                    -- Reached max range mid-air: start falling immediately
+                    self._stopped  = true
+                    self._hit_wall = false
+                    self.object:set_velocity({ x = 0, y = -4, z = 0 })
+                end
             end
-            self.object:set_velocity(vector.multiply(self._dir, SHURIKEN_SPEED))
+            if not self._stopped then
+                self.object:set_velocity(vector.multiply(self._dir, SHURIKEN_SPEED))
+            end
         else
             local tpos = thrower:get_pos()
             if not tpos then self.object:remove(); return end
@@ -613,14 +718,21 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
         end
 
         -- Wall collision
-        if not self._returning then
+        if not self._returning and not self._stopped then
             local vel = self.object:get_velocity()
             if vel then
                 local ahead = vector.add(pos, vector.multiply(vector.normalize(vel), 0.5))
                 local node  = minetest.get_node(ahead)
                 if minetest.registered_nodes[node.name]
                    and minetest.registered_nodes[node.name].walkable then
-                    self._returning = true
+                    if SHURIKEN_MODE == "return" then
+                        self._returning = true
+                    else
+                        -- Stick into wall
+                        self._stopped  = true
+                        self._hit_wall = true
+                        self.object:set_velocity(ZERO_VEL)
+                    end
                 end
             end
         end

@@ -28,14 +28,16 @@ local SCOUT_COOLDOWN      = tonumber(S:get("shinobi_set_bonus_scout_cooldown")) 
 
 local creative_group      = HIDE_FROM_CREATIVE and 1 or 0
 
+local colour = minetest.settings:get("shinobi_armour_colour") or "cyan"
+
 -- ============================================================
 -- Chestplate of Shinobi — increased melee damage
 -- ============================================================
 armor:register_armor("shinobi_no_satori:epic_chestplate", {
     description = "Chestplate of Shinobi",
-    inventory_image = "shinobi_chestplate_inv.png",
-    texture = "shinobi_chestplate_equipped.png",
-    preview = "shinobi_chestplate_preview.png",
+    inventory_image = "shinobi_chestplate_inv_" .. colour .. ".png",
+    texture = "shinobi_chestplate_equipped_" .. colour .. ".png",
+    preview = "shinobi_chestplate_preview_" .. colour .. ".png",
     groups = {
         armor_torso = 1,
         armor_heal = ARMOUR_HEAL,
@@ -73,9 +75,9 @@ end)
 -- ============================================================
 armor:register_armor("shinobi_no_satori:epic_headwear", {
     description = "Headwear of Shinobi",
-    inventory_image = "shinobi_headwear_inv.png",
-    texture = "shinobi_headwear_equipped.png",
-    preview = "shinobi_headwear_preview.png",
+    inventory_image = "shinobi_headwear_inv_" .. colour .. ".png",
+    texture = "shinobi_headwear_equipped_" .. colour .. ".png",
+    preview = "shinobi_headwear_preview_" .. colour .. ".png",
     groups = {
         armor_head = 1,
         armor_heal = ARMOUR_HEAL,
@@ -104,9 +106,9 @@ armor:register_armor("shinobi_no_satori:epic_headwear", {
 -- ============================================================
 armor:register_armor("shinobi_no_satori:epic_hakama", {
     description = "Hakama of Shinobi",
-    inventory_image = "shinobi_hakama_inv.png",
-    texture = "shinobi_hakama_equipped.png",
-    preview = "shinobi_hakama_preview.png",
+    inventory_image = "shinobi_hakama_inv_" .. colour .. ".png",
+    texture = "shinobi_hakama_equipped_" .. colour .. ".png",
+    preview = "shinobi_hakama_preview_" .. colour .. ".png",
     groups = {
         armor_legs = 1,
         armor_heal = ARMOUR_HEAL,

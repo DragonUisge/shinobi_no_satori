@@ -71,7 +71,9 @@ local boss_blacklist = {
     ["shinobi_no_satori:fire_shuriken"] = true,
     ["shinobi_no_satori:ice_shuriken"] = true,
     ["waterdragon:rare_water_dragon"] = true,
+    ["pochie_mod:pochie"] = true,
 }
+
 
 -- Try to figure out the max_hp of an entity definition
 local function get_entity_hp(def)
@@ -95,7 +97,7 @@ local function get_entity_hp(def)
     return nil
 end
 
--- Check if an entity looks like a hostile/fightable mob
+-- Check if an entity looks like a hostile/fightable mob with evil intentions
 local function is_hostile(def)
     -- Mobs Redo / mobs_mc: explicit type field
     if def.type == "monster" then return true end
@@ -130,6 +132,24 @@ local function is_hostile(def)
     end
     -- Has do_attack function (mobkit, some others)
     if type(def.do_attack) == "function" then return true end
+    -- Name-based: entity name contains evil-intent keywords
+    if def._entity_name then
+        local n = def._entity_name:lower()
+        local evil_keywords = {
+            "zombie", "skeleton", "spider", "creeper", "husk",
+            "witch", "phantom", "pillager", "vindicator", "evoker",
+            "wither", "blaze", "ghast", "enderm", "shulker",
+            "demon", "devil", "corrupt", "shadow", "dark", "evil",
+            "warden", "undead", "reaper", "wraith", "chaos",
+            "void", "abyssal", "infernal", "fallen", "soulless",
+            "bandit", "raider", "warrior", "orc", "goblin",
+            "dragon", "drake", "serpent", "beast", "titan",
+            "lich", "necro", "plague", "venomous",
+        }
+        for _, kw in ipairs(evil_keywords) do
+            if n:find(kw) then return true end
+        end
+    end
     -- Fallback: if it has significant HP (>= 200) and is a registered mob of any kind,
     -- assume it can fight. Covers edge cases.
     local hp = get_entity_hp(def)
@@ -152,6 +172,8 @@ minetest.register_on_mods_loaded(function()
 
     for name, def in pairs(minetest.registered_entities) do
         total_scanned = total_scanned + 1
+        -- Inject entity name into def so is_hostile can check it
+        local def_with_name = setmetatable({_entity_name = name}, {__index = def})
         if boss_blacklist[name] then skipped_blacklist = skipped_blacklist + 1; goto skip end
         if name:find("^shinobi_no_satori:") then skipped_blacklist = skipped_blacklist + 1; goto skip end
 
@@ -164,7 +186,7 @@ minetest.register_on_mods_loaded(function()
             skipped_low_hp = skipped_low_hp + 1
             goto skip
         end
-        if not is_hostile(def) then
+        if not is_hostile(def_with_name) then
             skipped_not_hostile = skipped_not_hostile + 1
             minetest.log("info", "[shinobi_no_satori] Skipped " .. name ..
                 " (HP=" .. hp .. ") — not hostile")
@@ -184,11 +206,8 @@ minetest.register_on_mods_loaded(function()
         skipped_low_hp .. " low HP, " .. skipped_not_hostile .. " not hostile, " ..
         #candidates .. " candidates")
 
-    -- Sort: higher HP first, but waterdragon always last
+    -- Sort: higher HP first
     table.sort(candidates, function(a, b)
-        if a.is_waterdragon ~= b.is_waterdragon then
-            return not a.is_waterdragon  -- waterdragon goes to the end
-        end
         return a.hp > b.hp
     end)
 
@@ -225,50 +244,81 @@ local function pick_boss(cycle)
     return boss_pool[idx]
 end
 
--- Helper: spawn the boss(es) for a player
-local function spawn_boss(player_name)
+-- Helper: spawn the boss(es) for a player.
+-- `attempt` is the retry counter (1–4).  On attempt > 1 the boss type is
+-- already stored in pdata.boss_entity so we skip re-picking.
+local function spawn_boss(player_name, attempt)
+    attempt = attempt or 1
     local pdata = quest_data[player_name]
     if not pdata or not pdata.structure_pos then return end
-    local sp = pdata.structure_pos
-    local center = { x = sp.x + 57, y = sp.y + 5, z = sp.z + 57 }
 
-    -- Determine which boss to use based on the current reward cycle
-    local ri = pdata.reward_index or 1
-    local boss_info = pick_boss(ri)
-    if not boss_info then
-        minetest.log("warning", "[shinobi_no_satori] No bosses available for " .. player_name)
+    -- Only pick / register the boss type on the very first attempt
+    if attempt == 1 then
+        local ri = pdata.reward_index or 1
+        local boss_info = pick_boss(ri)
+        if not boss_info then
+            minetest.log("warning", "[shinobi_no_satori] No bosses in pool for " .. player_name)
+            return
+        end
+        pdata.boss_entity = boss_info.entity
+        pdata.boss_count  = boss_info.count
+        pdata.stage = "fighting_boss"
+        save_progress()
+    end
+
+    local sp     = pdata.structure_pos
+    local cx, cz = sp.x + 57, sp.z + 57
+    -- Use a fixed Y above the arena floor; the schematic floor is roughly sp.y
+    local spawn_y = sp.y + 5
+
+    -- Force-load the spawn area (chunk may not be resident in memory)
+    local area_min = { x = cx - 10, y = spawn_y - 5, z = cz - 10 }
+    local area_max = { x = cx + 10, y = spawn_y + 10, z = cz + 10 }
+    minetest.load_area(area_min, area_max)
+
+    local spawned     = {}
+    local entity_name = pdata.boss_entity
+    local count       = pdata.boss_count or 1
+    local player      = minetest.get_player_by_name(player_name)
+
+    for i = 1, count do
+        local boss_pos = { x = cx + (i - 1) * 3, y = spawn_y, z = cz }
+        local obj = minetest.add_entity(boss_pos, entity_name)
+        if obj then
+            local ent = obj:get_luaentity()
+            if ent and player then ent._target = player end
+            table.insert(spawned, obj)
+        else
+            minetest.log("warning", "[shinobi_no_satori] add_entity returned nil at " ..
+                minetest.pos_to_string(boss_pos) .. " for " .. player_name)
+        end
+    end
+
+    if #spawned == 0 then
+        if attempt < 4 then
+            minetest.log("warning", "[shinobi_no_satori] Spawn attempt " .. attempt ..
+                " failed for " .. player_name .. " — retrying in 8 s")
+            minetest.after(8, spawn_boss, player_name, attempt + 1)
+        else
+            minetest.log("error", "[shinobi_no_satori] All spawn attempts failed for " ..
+                player_name .. " — skipping boss fight")
+            -- Can't spawn at all: advance quest so the player isn't stuck
+            local ri = pdata.reward_index or 1
+            pdata.reward_index = ri + 1
+            if quest_rewards[ri + 1] then
+                pdata.stage = "chest_spawned"
+                swap_arena(player_name, "shinobi_arena_chest.mts")
+            else
+                pdata.stage = "quest_complete"
+            end
+            save_progress()
+        end
         return
     end
 
-    -- Store boss info in quest data so we know what we're tracking
-    pdata.boss_entity = boss_info.entity
-    pdata.boss_count = boss_info.count
-
-    -- Spawn the required number of bosses
-    local spawned = {}
-    for i = 1, boss_info.count do
-        -- Offset each boss slightly so they don't overlap
-        local offset = (i - 1) * 3
-        local boss_pos = { x = center.x + offset, y = center.y, z = center.z }
-        local obj = minetest.add_entity(boss_pos, boss_info.entity)
-        if obj then
-            local ent = obj:get_luaentity()
-            local player = minetest.get_player_by_name(player_name)
-            if ent then
-                -- Try to set target on the entity (works for creatura/waterdragon mobs)
-                if player then
-                    ent._target = player
-                end
-            end
-            table.insert(spawned, obj)
-        end
-    end
     active_bosses[player_name] = spawned
-
-    pdata.stage = "fighting_boss"
-    save_progress()
     minetest.log("action", "[shinobi_no_satori] Spawned " .. #spawned .. "x " ..
-        boss_info.entity .. " (HP=" .. boss_info.hp .. ") for " .. player_name)
+        entity_name .. " (attempt " .. attempt .. ") for " .. player_name)
 end
 
 -- Quest rewards table — each entry is one reward cycle (chest → boss → next chest)
@@ -465,9 +515,11 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
         minetest.after(5, function(pn, hid)
             local pl = minetest.get_player_by_name(pn)
             if pl then pl:hud_remove(hid) end
-
             swap_arena(pn, "shinobi_arena_boss.mts")
-            spawn_boss(pn)
+            -- Wait an extra 5 s after schematic placement so the engine
+            -- has time to fully load the arena chunks before we try to
+            -- place a mob entity inside them.
+            minetest.after(5, spawn_boss, pn)
         end, pname, pre_boss_hud_id)
     end
     return true
@@ -485,6 +537,9 @@ local function spawn_quest_structure(player)
     quest_data[player_name].structure_pos = structure_pos
     save_progress()
 
+    -- Force-load the area so mobs can be spawned there later
+    local area_end = { x = structure_pos.x + 114, y = structure_pos.y + 20, z = structure_pos.z + 114 }
+    minetest.load_area(structure_pos, area_end)
     minetest.place_schematic(structure_pos, schematic_path, "0", nil, true)
     minetest.log("action", "[shinobi_no_satori] Placed arena schematic at " .. minetest.pos_to_string(structure_pos))
 end
@@ -531,9 +586,40 @@ minetest.register_globalstep(function(dtime)
         elseif player_quest_data and player_quest_data.stage == "fighting_boss" then
             local bosses = active_bosses[player_name]
             if not bosses or #bosses == 0 then
-                -- No boss references (e.g. server restart) — respawn
-                active_bosses[player_name] = nil
-                spawn_boss(player_name)
+                -- No boss refs in memory (server restarted mid-fight).
+                -- Scan the arena for any already-existing entities of the boss type
+                -- before deciding anything — NEVER re-spawn from scratch.
+                local sp = player_quest_data.structure_pos
+                local expected = player_quest_data.boss_entity
+                local center = sp and { x = sp.x+57, y = sp.y+5, z = sp.z+57 }
+                local found = {}
+                if center and expected then
+                    for _, obj in ipairs(minetest.get_objects_inside_radius(center, 200)) do
+                        local ent = obj:get_luaentity()
+                        if ent and ent.name == expected then
+                            table.insert(found, obj)
+                        end
+                    end
+                end
+                if #found > 0 then
+                    active_bosses[player_name] = found
+                    minetest.log("action", "[shinobi_no_satori] Reclaimed " ..
+                        #found .. " boss(es) for " .. player_name .. " after restart")
+                else
+                    -- Truly gone — advance the quest directly so the fight can't stall
+                    minetest.log("warning", "[shinobi_no_satori] No boss entities found for " ..
+                        player_name .. " — advancing quest")
+                    active_bosses[player_name] = nil
+                    local ri = (player_quest_data.reward_index or 1)
+                    player_quest_data.reward_index = ri + 1
+                    if quest_rewards[ri + 1] then
+                        player_quest_data.stage = "chest_spawned"
+                        swap_arena(player_name, "shinobi_arena_chest.mts")
+                    else
+                        player_quest_data.stage = "quest_complete"
+                    end
+                    save_progress()
+                end
             else
                 -- Count alive / dead / despawned bosses
                 local alive = {}
@@ -548,7 +634,9 @@ minetest.register_globalstep(function(dtime)
                     else
                         local ent = boss:get_luaentity()
                         if ent then
-                            local hp = ent.hp or (ent.object and ent.object:get_hp()) or 1
+                            -- boss:get_hp() is the engine-level value and works for
+                            -- all mob frameworks; ent.hp is a secondary fallback
+                            local hp = boss:get_hp() or ent.hp or 1
                             if hp > 0 then
                                 all_dead = false
                                 table.insert(alive, boss)
@@ -561,28 +649,67 @@ minetest.register_globalstep(function(dtime)
                 end
 
                 if any_despawned and not all_dead then
-                    -- Some bosses despawned — respawn everything
+                    -- Boss(es) left the loaded area. Never re-spawn —
+                    -- instead scan a large radius around the arena centre and
+                    -- reclaim any surviving entities of the expected type,
+                    -- then teleport them back into the arena.
+                    local sp   = player_quest_data.structure_pos
+                    local center = sp and { x = sp.x+57, y = sp.y+5, z = sp.z+57 }
+                    local expected = player_quest_data.boss_entity
+                    local reclaimed = {}
+
+                    if center and expected then
+                        for _, obj in ipairs(minetest.get_objects_inside_radius(center, 300)) do
+                            local ent = obj:get_luaentity()
+                            if ent and ent.name == expected then
+                                local hp = ent.hp
+                                    or (ent.object and ent.object:get_hp())
+                                    or obj:get_hp()
+                                    or 1
+                                if hp > 0 then
+                                    table.insert(reclaimed, obj)
+                                    -- Teleport back to arena centre
+                                    obj:set_pos({
+                                        x = center.x + (#reclaimed - 1) * 3,
+                                        y = center.y,
+                                        z = center.z,
+                                    })
+                                end
+                            end
+                        end
+                    end
+
+                    -- Also keep any refs that were already alive
                     for _, boss in ipairs(bosses) do
-                        if boss:get_pos() then boss:remove() end
+                        if boss:get_pos() then table.insert(reclaimed, boss) end
                     end
-                    active_bosses[player_name] = nil
 
-                    local despawn_hud = player:hud_add({
-                        type = "text", position = {x = 0.5, y = 0.5},
-                        text = "The beast dissolves into mist...\nBut the darkness is not so easily escaped.\nIt reforms. It hungers. It returns.",
-                        number = 0x29B6F6, scale = {x = 100, y = 20}, alignment = {x = 0, y = 0}, size = {x = 1, y = 1},
-                    })
-                    minetest.after(4, function(pn, hid)
-                        local pl = minetest.get_player_by_name(pn)
-                        if pl then pl:hud_remove(hid) end
-                    end, player_name, despawn_hud)
-
-                    -- Teleport player to center
-                    local sp = player_quest_data.structure_pos
-                    if sp then
-                        player:set_pos({ x = sp.x + 57, y = sp.y + 3, z = sp.z + 57 })
+                    if #reclaimed > 0 then
+                        active_bosses[player_name] = reclaimed
+                        local despawn_hud = player:hud_add({
+                            type = "text", position = {x = 0.5, y = 0.5},
+                            text = "The beast dissolves into mist...\nBut the darkness is not so easily escaped.\nIt coalesces again within the arena.",
+                            number = 0x29B6F6, scale = {x = 100, y = 20}, alignment = {x = 0, y = 0}, size = {x = 1, y = 1},
+                        })
+                        minetest.after(4, function(pn, hid)
+                            local pl = minetest.get_player_by_name(pn)
+                            if pl then pl:hud_remove(hid) end
+                        end, player_name, despawn_hud)
+                    else
+                        -- Boss despawned beyond reclaim radius — advance quest
+                        minetest.log("warning", "[shinobi_no_satori] Boss for " ..
+                            player_name .. " could not be reclaimed — advancing quest")
+                        active_bosses[player_name] = nil
+                        local ri = (player_quest_data.reward_index or 1)
+                        player_quest_data.reward_index = ri + 1
+                        if quest_rewards[ri + 1] then
+                            player_quest_data.stage = "chest_spawned"
+                            swap_arena(player_name, "shinobi_arena_chest.mts")
+                        else
+                            player_quest_data.stage = "quest_complete"
+                        end
+                        save_progress()
                     end
-                    spawn_boss(player_name)
                 elseif all_dead then
                     -- All bosses killed! Clean up corpses
                     for _, boss in ipairs(bosses) do
@@ -630,18 +757,22 @@ minetest.register_globalstep(function(dtime)
                     end
                     save_progress()
                 else
-                    -- Some bosses still alive — check distance for each
-                    local player_pos = player:get_pos()
-                    for _, boss in ipairs(alive) do
-                        local boss_pos = boss:get_pos()
-                        if boss_pos then
-                            local dist = vector.distance(player_pos, boss_pos)
-                            if dist > 80 then
-                                local dir = vector.direction(boss_pos, player_pos)
-                                local near_pos = vector.add(boss_pos, vector.multiply(dir, 20))
-                                near_pos.y = math.max(near_pos.y, boss_pos.y)
-                                player:set_pos(near_pos)
-                                break  -- only teleport once
+                    -- Some bosses still alive — teleport wandering bosses back to centre
+                    local sp = player_quest_data.structure_pos
+                    local center = sp and { x = sp.x+57, y = sp.y+5, z = sp.z+57 }
+                    if center then
+                        for i, boss in ipairs(alive) do
+                            local boss_pos = boss:get_pos()
+                            if boss_pos then
+                                local dist = vector.distance(center, boss_pos)
+                                if dist > 60 then
+                                    -- Teleport the boss back, not the player
+                                    boss:set_pos({
+                                        x = center.x + (i - 1) * 3,
+                                        y = center.y,
+                                        z = center.z,
+                                    })
+                                end
                             end
                         end
                     end
