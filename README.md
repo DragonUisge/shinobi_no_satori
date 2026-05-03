@@ -52,4 +52,8 @@ Options:
 `both`       — both name and body are hidden,
 `scout`      — activates a spy ghost: your decoy body stays in place while your shadow goes through the world; press Sneak/Shift+Jump to activate and return.
 
+# Credits
 
+Mod is made from scratch.
+Mod developer: Scottii
+Inspired by: [Shinobi no Satori - a mod for The Legend of Zelda: Tears of the Kingdom by Catzy](https://gamebanana.com/mods/641335)

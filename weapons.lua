@@ -802,4 +802,109 @@ minetest.register_craftitem("shinobi_no_satori:ice_shuriken", {
     end,
 })
 
+-- Crafting recipes
+
+--fire_shuriken
+
+minetest.register_craft({
+    output = "shinobi_no_satori:fire_shuriken 5",
+    recipe = {
+        { "default:steel_ingot", "", "default:steel_ingot" },
+        { "", "default:stick", "" },
+        { "default:steel_ingot", "", "default:steel_ingot" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:fire_shuriken 5",
+    recipe = {
+        { "default:coal_lump", "", "default:coal_lump" },
+        { "", "default:stick", "" },
+        { "default:coal_lump", "", "default:coal_lump" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:fire_shuriken 5",
+    recipe = {
+        { "default:torch", "", "default:torch" },
+        { "", "default:stick", "" },
+        { "default:torch", "", "default:torch" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:fire_shuriken 5",
+    recipe = {
+        { "default:lava_source", "", "default:lava_source" },
+        { "", "default:stick", "" },
+        { "default:lava_source", "", "default:lava_source" },
+    },
+})
+
+--ice_shuriken
+
+minetest.register_craft({
+    output = "shinobi_no_satori:ice_shuriken 5",
+    recipe = {
+        { "default:ice", "", "default:ice" },
+        { "", "default:stick", "" },
+        { "default:ice", "", "default:ice" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:ice_shuriken 5",
+    recipe = {
+        { "default:snowblock", "", "default:snowblock" },
+        { "", "default:stick", "" },
+        { "default:snowblock", "", "default:snowblock" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:ice_shuriken 5",
+    recipe = {
+        { "default:water_source", "", "default:water_source" },
+        { "", "default:stick", "" },
+        { "default:water_source", "", "default:water_source" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:ice_shuriken 5",
+    recipe = {
+        { "default:river_water_source", "", "default:river_water_source" },
+        { "", "default:stick", "" },
+        { "default:river_water_source", "", "default:river_water_source" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:ice_shuriken 5",
+    recipe = {
+        { "default:ice", "", "default:snowblock" },
+        { "", "default:stick", "" },
+        { "default:ice", "", "default:snowblock" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:ice_shuriken 5",
+    recipe = {
+        { "default:ice", "", "default:water_source" },
+        { "", "default:stick", "" },
+        { "default:ice", "", "default:water_source" },
+    },
+})
+
+minetest.register_craft({
+    output = "shinobi_no_satori:ice_shuriken 5",
+    recipe = {
+        { "default:snowblock", "", "default:water_source" },
+        { "", "default:stick", "" },
+        { "default:snowblock", "", "default:water_source" },
+    },
+})
+
 minetest.log("action", "[shinobi_no_satori] Shuriken weapons loaded")
