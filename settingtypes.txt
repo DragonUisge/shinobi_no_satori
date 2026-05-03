@@ -10,14 +10,16 @@ shinobi_hide_from_creative (Hide armour from creative inventory) bool true
 # With all 3 pieces equipped the total is 3× this value.
 shinobi_armour_heal (Armour heal chance per piece) int 18 0 100
 
-# Armour colours. Options: cyan, orange. Default: cyan.
+# Armour colour. Options: cyan, orange. Default: cyan.
 shinobi_armour_colour (Armour colour) enum cyan cyan,orange
-
-[Abilities]
 
 # Damage multiplier for the chestplate.
 # 1.0 = normal damage, 2.0 = double damage.
 shinobi_damage_multiplier (Chestplate damage multiplier) float 1.8 1.0 5.0
+
+# Speed boost from hakama (added to base speed).
+# 0.6 = +60% speed.
+shinobi_speed_boost (Hakama speed boost) float 0.6 0.0 3.0
 
 # Movement speed when wall-walking with the headwear.
 shinobi_wall_walk_speed (Wall-walk speed) float 4.0 1.0 10.0
@@ -25,20 +27,16 @@ shinobi_wall_walk_speed (Wall-walk speed) float 4.0 1.0 10.0
 # Night vision brightness (0.0 = pitch black, 1.0 = full daylight).
 shinobi_night_vision_ratio (Night vision brightness) float 0.6 0.0 1.0
 
-# Speed boost from hakama (added to base speed).
-# 0.6 = +60% speed.
-shinobi_speed_boost (Hakama speed boost) float 0.6 0.0 3.0
-
 [Shuriken]
 
 # Flight speed of the shuriken (blocks/s).
 shinobi_shuriken_speed (Shuriken speed) int 22 5 60
 
-# Maximum range before the shuriken turns back (blocks).
+# Maximum range before the shuriken turns back/falls (blocks).
 shinobi_shuriken_range (Shuriken range) int 18 5 50
 
 # Punch damage dealt to entities on hit.
-shinobi_shuriken_damage (Shuriken damage) int 6 1 20
+shinobi_shuriken_damage (Shuriken damage) int 15 0 50
 
 # Duration of the freeze effect (seconds).
 shinobi_shuriken_freeze_time (Freeze duration) float 5.0 0.5 15.0
