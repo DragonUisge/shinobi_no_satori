@@ -53,10 +53,6 @@ Options:
 - `both`       — both name and body are hidden,
 - `scout`      — activates a spy ghost: your decoy body stays in place while your shadow goes through the world; press Sneak/Shift+Jump to activate and return.
 
-### Debug settings
-
-- **Debug: bosses spawn with 1 HP** (`shinobi_debug_boss_one_hp`): all spawned bosses immediately receive 1 HP — useful for testing the quest flow. Default: false
-
 # Chat Commands
 
 All commands require the `server` privilege.
