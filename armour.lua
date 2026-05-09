@@ -19,9 +19,10 @@ local S                   = minetest.settings
 
 local HIDE_FROM_CREATIVE  = S:get_bool("shinobi_hide_from_creative", true)
 local ARMOUR_HEAL         = tonumber(S:get("shinobi_armour_heal")) or 18
-local DAMAGE_MULTIPLIER   = tonumber(S:get("shinobi_damage_multiplier")) or 1.8
-local NIGHT_VISION_RATIO  = tonumber(S:get("shinobi_night_vision_ratio")) or 0.6
-local SPEED_BOOST         = tonumber(S:get("shinobi_speed_boost")) or 0.6
+local DAMAGE_MULTIPLIER     = tonumber(S:get("shinobi_damage_multiplier")) or 1.8
+local NIGHT_VISION_RATIO    = tonumber(S:get("shinobi_night_vision_ratio")) or 0.6
+local SPEED_BOOST           = tonumber(S:get("shinobi_speed_boost")) or 0.6
+local FALL_DAMAGE_REDUCTION = tonumber(S:get("shinobi_fall_damage_reduction")) or 0.5
 local WATER_WALK_INTERVAL = 0.1
 local SET_BONUS           = S:get("shinobi_set_bonus") or "both"
 local SCOUT_COOLDOWN      = tonumber(S:get("shinobi_set_bonus_scout_cooldown")) or 20.0
@@ -69,6 +70,17 @@ minetest.register_on_punchplayer(function(player, hitter, time_from_last_punch, 
         end
     end
 end)
+
+-- Reduce fall damage for chestplate wearers
+minetest.register_on_player_hpchange(function(player, hp_change, reason)
+    if reason and reason.type == "fall" and hp_change < 0 then
+        local name = player:get_player_name()
+        if chestplate_users[name] then
+            return math.ceil(hp_change * (1 - FALL_DAMAGE_REDUCTION))
+        end
+    end
+    return hp_change
+end, true)
 
 -- ============================================================
 -- Headwear of Shinobi — night vision + something like noclip

@@ -17,6 +17,9 @@ shinobi_armour_colour (Armour colour) enum cyan cyan,orange
 # 1.0 = normal damage, 2.0 = double damage.
 shinobi_damage_multiplier (Chestplate damage multiplier) float 1.8 1.0 5.0
 
+# Fall damage reduction when wearing the chestplate (0.0 = no reduction, 1.0 = immune).
+shinobi_fall_damage_reduction (Chestplate fall damage reduction) float 0.5 0.0 1.0
+
 # Speed boost from hakama (added to base speed).
 # 0.6 = +60% speed.
 shinobi_speed_boost (Hakama speed boost) float 0.6 0.0 3.0

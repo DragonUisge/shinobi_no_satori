@@ -10,7 +10,7 @@ A new quest to obtain the special ninja armour.
 
 ## New Armour with abilities
 - **Headwear of Shinobi** (shinobi_no_satori:epic_headwear): Grants night vision, and by pressing `Sneak/Shift + Right-click` on a wall, you can pass through it.
-- **Chestplate of Shinobi** (shinobi_no_satori:epic_chestplate): Grants an attack bonus (configurable, see: Configuration).
+- **Chestplate of Shinobi** (shinobi_no_satori:epic_chestplate): Grants an attack bonus and reduces fall damage (configurable, see: Configuration).
 - **Hakama of Shinobi** (shinobi_no_satori:epic_hakama): Grants a speed boost (also configurable) and the ability to sprint across water.
 
 ## New Weapons
@@ -25,6 +25,7 @@ A new quest to obtain the special ninja armour.
 - **Armour heal chance per piece**: Heal chance for each armour piece (percentage out of 100). With all 3 pieces equipped the total is 3× this value. Default: 18
 - **Armour colour**: Two options: `cyan` or `orange`. Default: cyan, looks more ancient.
 - **Chestplate damage multiplier**: multiplies damage bonus. Default: 1.8
+- **Chestplate fall damage reduction**: fraction of fall damage absorbed (0.0 = none, 1.0 = immune). Default: 0.5
 - **Hakama speed boost**: speed multiplier added to base speed. Default: 0.6
 - **Wall-walk speed**: movement speed while passing through walls with the headwear. Default: 4.0
 - **Night vision brightness**: brightness when headwear is equipped (0.0 = dark, 1.0 = full daylight). Default: 0.6
