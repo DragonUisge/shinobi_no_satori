@@ -24,9 +24,10 @@ A new quest to obtain the special ninja armour.
 - **Hide armour from creative inventory**: removes the armour set from creative inventory. Default: true
 - **Armour heal chance per piece**: Heal chance for each armour piece (percentage out of 100). With all 3 pieces equipped the total is 3× this value. Default: 18
 - **Armour colour**: Two options: `cyan` or `orange`. Default: cyan, looks more ancient.
-- **Chestplate damage multiplier**: multiplies damage bonus. Default: 1,8
-- **Hakama speed boost**: multiplies hakama speed boost. Default: 1.6
-- **Night vision brightness**: night vision brightness multiplier when headwear is equipped. Default: 1.6
+- **Chestplate damage multiplier**: multiplies damage bonus. Default: 1.8
+- **Hakama speed boost**: speed multiplier added to base speed. Default: 0.6
+- **Wall-walk speed**: movement speed while passing through walls with the headwear. Default: 4.0
+- **Night vision brightness**: brightness when headwear is equipped (0.0 = dark, 1.0 = full daylight). Default: 0.6
 
 ### Shuriken settings
 
@@ -37,7 +38,7 @@ A new quest to obtain the special ninja armour.
 - **Shuriken damage**: damage the shuriken deals upon striking. Default: 15^
 - **Freeze duration**: duration of freeze effect (in seconds). Default: 5
 - **Burn duration**: duration of burn effect (in seconds). Default: 4
-- **Hit radius**: Hit radius around the shuriken (blocks). Default: 1.8^
+- **Hit radius**: hit radius around the shuriken (blocks). Default: 1.8^
 - **Throw cooldown**: cooldown between throws (in seconds). Default: 1^
 - **Shuriken flight mode**: behaviour when the shuriken hits a wall or reaches its maximum range.
 `drop` — (default) sticks in a wall for ~2 seconds, then drops as an item, or falls to the ground if shuriken range is reached mid-air.
@@ -51,6 +52,21 @@ Options:
 - `invisible`  — the player's body becomes invisible to other players,
 - `both`       — both name and body are hidden,
 - `scout`      — activates a spy ghost: your decoy body stays in place while your shadow goes through the world; press Sneak/Shift+Jump to activate and return.
+
+### Debug settings
+
+- **Debug: bosses spawn with 1 HP** (`shinobi_debug_boss_one_hp`): all spawned bosses immediately receive 1 HP — useful for testing the quest flow. Default: false
+
+# Chat Commands
+
+All commands require the `server` privilege.
+
+| Command | Description |
+|---|---|
+| `/shintp` | Teleport to the quest chest, or to the arena corner if no chest is found. |
+| `/rquest [player_name]` | Reset quest progress for yourself or another player. |
+| `/shindebug` | Print full quest state and boss pool to chat. |
+| `/shinspawn` | Force-respawn the boss immediately (only works while in `fighting_boss` stage). |
 
 # Credits
 

@@ -416,11 +416,8 @@ local function do_spawn_boss(player_name)
             entity, minetest.pos_to_string(bpos), node_at))
         local obj  = minetest.add_entity(bpos, entity)
         if obj then
-            if minetest.settings:get_bool("shinobi_debug_boss_one_hp", false) then
-                obj:set_hp(1)
-            end
             table.insert(spawned, { obj = obj, last_hp = obj:get_hp() or 100, last_pos = bpos, killed = false })
-            minetest.chat_send_player(player_name,
+            minetest.log("action",
                 ("[shinobi] Boss spawned at %s"):format(minetest.pos_to_string(bpos)))
         else
             minetest.log("warning", ("[shinobi_no_satori] add_entity returned nil for %s at %s"):format(
@@ -479,7 +476,7 @@ local function start_boss_fight(player_name)
     if not boss_info then
         minetest.log("warning", "[shinobi_no_satori] Boss pool empty — no fight for " .. player_name)
         minetest.chat_send_player(player_name,
-            "[shinobi] No boss entities are installed — the trial is waived.")
+            "The trial is waived.")
         -- Advance quest so the player isn't permanently stuck
         pdata.reward_index = ri + 1
         if quest_rewards[pdata.reward_index] then
@@ -493,7 +490,7 @@ local function start_boss_fight(player_name)
     end
 
     minetest.chat_send_player(player_name,
-        "[shinobi] The trial begins — face your challenger.")
+        "The trial begins — face your challenger.")
     minetest.log("action", "[shinobi_no_satori] Chosen boss for " .. player_name
         .. ": " .. boss_info.entity .. " (HP=" .. boss_info.hp .. ") x" .. boss_info.count)
 

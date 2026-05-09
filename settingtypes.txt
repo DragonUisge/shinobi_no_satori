@@ -69,8 +69,3 @@ shinobi_set_bonus (Full-set bonus mode) enum nameonly nameonly,invisible,both,sc
 
 # Cooldown between scout activations (seconds).
 shinobi_set_bonus_scout_cooldown (Scout cooldown) float 20.0 0.1 120.0
-
-[Debug]
-
-# Set all spawned bosses to 1 HP for quick testing.
-shinobi_debug_boss_one_hp (Debug: bosses spawn with 1 HP) bool false
