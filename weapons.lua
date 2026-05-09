@@ -762,7 +762,7 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
 minetest.register_craftitem("shinobi_no_satori:ice_shuriken", {
     description      = "Shuriken of Ice",
     inventory_image  = "shinobi_ice_shuriken_inv.png",
-    stack_max        = 20,
+    stack_max        = 200,
 
     on_use = function(itemstack, player, pointed_thing)
         if not player or not player:is_player() then return end

@@ -2,7 +2,7 @@
 This mod adds ninja armour and weapons to the game.
 
 # Features
-## New Boss Arena:
+## New Boss Arena
 Adds a new big Japanese-styled arena for the quest.
 
 ## New Quest
@@ -14,8 +14,8 @@ A new quest to obtain the special ninja armour.
 - **Hakama of Shinobi** (shinobi_no_satori:epic_hakama): Grants a speed boost (also configurable) and the ability to sprint across water.
 
 ## New Weapons
-- **Fire Shuriken** (shinobi_no_satori:fire_shuriken): Can be thrown, burns enemies on hit.
-- **Ice Shuriken** (shinobi_no_satori:ice_shuriken): Same as fire shuriken, but instead freezes enemies.
+- **Shuriken of Fire** (shinobi_no_satori:fire_shuriken): Can be thrown, burns enemies on hit.
+- **Shuriken of Ice** (shinobi_no_satori:ice_shuriken): Same as fire shuriken, but instead freezes enemies.
 
 # Configuration
 
@@ -37,23 +37,23 @@ A new quest to obtain the special ninja armour.
 - **Shuriken damage**: damage the shuriken deals upon striking. Default: 15^
 - **Freeze duration**: duration of freeze effect (in seconds). Default: 5
 - **Burn duration**: duration of burn effect (in seconds). Default: 4
-- **Hit radius**: Hit radius around the shuriken (blocks). Default: 1.8
-- **Throw cooldown**: cooldown between throws (in seconds). Default: 1
+- **Hit radius**: Hit radius around the shuriken (blocks). Default: 1.8^
+- **Throw cooldown**: cooldown between throws (in seconds). Default: 1^
 - **Shuriken flight mode**: behaviour when the shuriken hits a wall or reaches its maximum range.
 `drop` — (default) sticks in a wall for ~2 seconds, then drops as an item, or falls to the ground if shuriken range is reached mid-air.
-`return` — boomerang: curves back and returns to the thrower's inventory.
+`return` — boomerang: curves back and returns to the thrower's inventory. Default: drop^
 
 ### Armour set bonus settings
 
 - **Bonus granted when all three armour pieces are equipped at the same time.**
 Options:
-`nameonly`   — the player's nametag is hidden from other players,
-`invisible`  — the player's body becomes invisible to other players,
-`both`       — both name and body are hidden,
-`scout`      — activates a spy ghost: your decoy body stays in place while your shadow goes through the world; press Sneak/Shift+Jump to activate and return.
+- `nameonly`   — the player's nametag is hidden from other players,
+- `invisible`  — the player's body becomes invisible to other players,
+- `both`       — both name and body are hidden,
+- `scout`      — activates a spy ghost: your decoy body stays in place while your shadow goes through the world; press Sneak/Shift+Jump to activate and return.
 
 # Credits
 
-Mod is made from scratch.
-Mod developer: Scottii
-Inspired by: [Shinobi no Satori - a mod for The Legend of Zelda: Tears of the Kingdom by Catzy](https://gamebanana.com/mods/641335)
+- Mod is made from scratch.
+- Mod developer: Scottii
+- Inspired by: [Shinobi no Satori - a mod for The Legend of Zelda: Tears of the Kingdom by Catzy](https://gamebanana.com/mods/641335)
