@@ -59,6 +59,23 @@ shinobi_shuriken_cooldown (Throw cooldown) float 1.0 0.0 5.0
 #   return — boomerang: curves back and returns to the thrower's inventory
 shinobi_shuriken_mode (Shuriken flight mode) enum drop drop,return
 
+[Shuriken of Thunder]
+
+# Base damage dealt by the lightning shuriken.
+shinobi_lightning_damage (Lightning shuriken damage) int 8 1 50
+
+# How long (seconds) the primary target is stunned after a hit.
+shinobi_lightning_stun_time (Lightning stun duration) float 0.8 0.0 10.0
+
+# Maximum number of additional targets the chain arc can jump to.
+shinobi_lightning_chain_count (Lightning chain target count) int 2 0 10
+
+# Radius (blocks) around the primary hit to search for chain targets.
+shinobi_lightning_chain_range (Lightning chain range) float 6.0 1.0 20.0
+
+# Damage multiplier applied to each chained target (relative to primary damage).
+shinobi_lightning_chain_mult (Lightning chain damage multiplier) float 0.5 0.0 1.0
+
 [Full set bonus]
 
 # Bonus granted when all three armour pieces are worn at the same time.
