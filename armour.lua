@@ -243,7 +243,10 @@ local function remove_full_set(player)
     if not full_set_users[name] then return end
     full_set_users[name] = nil
 
-    player:set_nametag_attributes({ text = name, bgcolor = false })
+    -- Respect dungeon rank title when restoring nametag
+    local title   = shinobi_player_titles and shinobi_player_titles[name]
+    local display = title and (minetest.colorize("#FFD700", "[" .. title .. "]") .. " " .. name) or name
+    player:set_nametag_attributes({ text = display, bgcolor = false })
     player:set_properties({ visual_size = { x = 1, y = 1 } })
 
     -- End any active scout session
@@ -713,3 +716,140 @@ minetest.register_on_leaveplayer(function(player)
         active_scout_decoys[name] = nil
     end
 end)
+
+-- ============================================================
+-- Elite Armour of Shinobi  (Dungeon Reward)
+-- Same abilities as the base set but with stronger stats:
+--   • Higher armour absorption
+--   • Higher heal chance (faster natural regen)
+--   • Higher speed bonus
+--   • Full set: raises max HP to ELITE_HP_MAX
+-- ============================================================
+local ELITE_HEAL    = tonumber(S:get("shinobi_elite_armour_heal")) or 30
+local ELITE_SPEED   = tonumber(S:get("shinobi_elite_speed_boost")) or 0.9
+local ELITE_HP_MAX  = tonumber(S:get("shinobi_elite_hp_max"))      or 30
+
+local elite_cp_users = {}
+local elite_hw_users = {}
+local elite_hk_users = {}
+local elite_set_users = {}
+
+local function has_elite_full_set(name)
+    return elite_cp_users[name] and elite_hw_users[name] and elite_hk_users[name]
+end
+
+local function apply_elite_set(player)
+    local name = player:get_player_name()
+    if elite_set_users[name] then return end
+    elite_set_users[name] = true
+    player:set_properties({ hp_max = ELITE_HP_MAX })
+    -- Partially top-up HP so the player feels the expansion immediately
+    local hp = player:get_hp()
+    player:set_hp(math.min(hp + 5, ELITE_HP_MAX))
+end
+
+local function remove_elite_set(player)
+    local name = player:get_player_name()
+    if not elite_set_users[name] then return end
+    elite_set_users[name] = nil
+    player:set_properties({ hp_max = 20 })
+    local hp = player:get_hp()
+    if hp > 20 then player:set_hp(20) end
+end
+
+local function check_elite_set(player)
+    if has_elite_full_set(player:get_player_name()) then
+        apply_elite_set(player)
+    else
+        remove_elite_set(player)
+    end
+end
+
+-- Elite Chestplate
+armor:register_armor("shinobi_no_satori:elite_chestplate", {
+    description = "Elite Chestplate of Shinobi",
+    inventory_image = "shinobi_chestplate_inv_" .. colour .. ".png",
+    texture         = "shinobi_chestplate_equipped_" .. colour .. ".png",
+    preview         = "shinobi_chestplate_preview_" .. colour .. ".png",
+    groups = {
+        armor_torso = 1,
+        armor_heal  = ELITE_HEAL,
+        armor_use   = 0,
+    },
+    armor_groups = { fleshy = 18 },
+    on_equip = function(player, index, stack)
+        local name = player:get_player_name()
+        chestplate_users[name] = true
+        elite_cp_users[name]   = true
+        check_full_set(player)
+        check_elite_set(player)
+    end,
+    on_unequip = function(player, index, stack)
+        local name = player:get_player_name()
+        chestplate_users[name] = nil
+        elite_cp_users[name]   = nil
+        clear_full_set(player)
+        remove_elite_set(player)
+    end,
+})
+
+-- Elite Headwear
+armor:register_armor("shinobi_no_satori:elite_headwear", {
+    description = "Elite Headwear of Shinobi",
+    inventory_image = "shinobi_headwear_inv_" .. colour .. ".png",
+    texture         = "shinobi_headwear_equipped_" .. colour .. ".png",
+    preview         = "shinobi_headwear_preview_" .. colour .. ".png",
+    groups = {
+        armor_head = 1,
+        armor_heal = ELITE_HEAL,
+        armor_use  = 0,
+    },
+    armor_groups = { fleshy = 14 },
+    on_equip = function(player, index, stack)
+        local name = player:get_player_name()
+        headwear_users[name] = true
+        elite_hw_users[name] = true
+        player:override_day_night_ratio(NIGHT_VISION_RATIO)
+        check_full_set(player)
+        check_elite_set(player)
+    end,
+    on_unequip = function(player, index, stack)
+        local name = player:get_player_name()
+        headwear_users[name] = nil
+        elite_hw_users[name] = nil
+        player:override_day_night_ratio(nil)
+        clear_full_set(player)
+        remove_elite_set(player)
+    end,
+})
+
+-- Elite Hakama
+armor:register_armor("shinobi_no_satori:elite_hakama", {
+    description = "Elite Hakama of Shinobi",
+    inventory_image = "shinobi_hakama_inv_" .. colour .. ".png",
+    texture         = "shinobi_hakama_equipped_" .. colour .. ".png",
+    preview         = "shinobi_hakama_preview_" .. colour .. ".png",
+    groups = {
+        armor_legs   = 1,
+        armor_heal   = ELITE_HEAL,
+        armor_use    = 0,
+        physics_speed = ELITE_SPEED,
+    },
+    armor_groups = { fleshy = 14 },
+    on_equip = function(player, index, stack)
+        local name = player:get_player_name()
+        hakama_users[name]   = true
+        elite_hk_users[name] = true
+        check_full_set(player)
+        check_elite_set(player)
+    end,
+    on_unequip = function(player, index, stack)
+        local name = player:get_player_name()
+        hakama_users[name]   = nil
+        elite_hk_users[name] = nil
+        clear_full_set(player)
+        remove_elite_set(player)
+    end,
+})
+
+minetest.log("action", "[shinobi_no_satori] Armour loaded")

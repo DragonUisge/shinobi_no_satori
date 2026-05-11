@@ -89,3 +89,25 @@ shinobi_set_bonus (Full-set bonus mode) enum nameonly nameonly,invisible,both,sc
 
 # Cooldown between scout activations (seconds).
 shinobi_set_bonus_scout_cooldown (Scout cooldown) float 20.0 0.1 120.0
+
+[Dungeon Traps]
+
+# How often (seconds) the dart wall fires a dart.
+shinobi_dart_interval (Dart trap fire interval) float 3.0 0.5 30.0
+
+# Speed of the dart projectile (blocks/second).
+shinobi_dart_speed (Dart speed) float 20.0 1.0 60.0
+
+# Damage dealt by a dart on hit.
+shinobi_dart_damage (Dart damage) int 4 1 20
+
+[Elite Armour]
+
+# Heal chance per tick for the elite armour (higher = faster natural regen; base is 18).
+shinobi_elite_armour_heal (Elite armour heal) int 30 0 100
+
+# Speed multiplier bonus from the elite hakama (stacks with normal physics; base is 0.6).
+shinobi_elite_speed_boost (Elite speed boost) float 0.9 0.0 3.0
+
+# Maximum HP when wearing the full elite armour set (default player max is 20).
+shinobi_elite_hp_max (Elite full-set max HP) int 30 20 100
