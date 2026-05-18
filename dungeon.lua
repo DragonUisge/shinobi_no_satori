@@ -25,7 +25,7 @@ local SPIKE_DAMAGE  = 4  -- HP removed per second by spike floor (bypasses armou
 -- ============================================================
 minetest.register_node("sns:spike_floor", {
     description = "Spike Floor",
-    tiles = { "shinobi_spike_floor_top.png", "shinobi_spike_floor_side.png" },
+    tiles = { "sns_spike_floor_top.png", "sns_spike_floor_side.png" },
     groups = { cracky = 2 },  -- no damage_per_second: handled by ABM to bypass armour
     sounds = default.node_sound_stone_defaults(),
 })
@@ -60,7 +60,7 @@ local collapsing = {}   -- position hash → true while countdown is running
 
 minetest.register_node("sns:collapse_floor", {
     description = "Crumbling Floor",
-    tiles = { "shinobi_collapse_floor.png" },
+    tiles = { "sns_collapse_floor.png" },
     groups = { cracky = 3 },
     sounds = default.node_sound_stone_defaults(),
 })
@@ -119,7 +119,7 @@ minetest.register_abm({
 minetest.register_entity("sns:dart", {
     initial_properties = {
         visual              = "upright_sprite",
-        textures            = { "shinobi_dart.png" },
+        textures            = { "sns_dart.png" },
         visual_size         = { x = 0.25, y = 0.25 },
         physical            = false,
         collide_with_objects = false,
@@ -165,12 +165,12 @@ minetest.register_node("sns:dart_wall", {
     -- Tile order: top, bottom, X+, X-, Z- (back), Z+ (front/dart exit)
     -- tile[6] = Z+ = the face the dart exits from when facedir_to_dir gives +Z
     tiles = {
-        "shinobi_dart_wall_top.png",   -- 1: top
-        "shinobi_dart_wall_top.png",   -- 2: bottom
-        "shinobi_dart_wall_side.png",  -- 3: X+
-        "shinobi_dart_wall_side.png",  -- 4: X-
-        "shinobi_dart_wall_side.png",  -- 5: Z- (back)
-        "shinobi_dart_wall_side.png", -- 6: Z+ (front, dart exits here)
+        "sns_dart_wall_top.png",   -- 1: top
+        "sns_dart_wall_top.png",   -- 2: bottom
+        "sns_dart_wall_side.png",  -- 3: X+
+        "sns_dart_wall_side.png",  -- 4: X-
+        "sns_dart_wall_side.png",  -- 5: Z- (back)
+        "sns_dart_wall_side.png", -- 6: Z+ (front, dart exits here)
     },
     paramtype2 = "facedir",
     groups = { cracky = 2 },
@@ -201,7 +201,7 @@ minetest.register_node("sns:dart_wall", {
                 obj:set_rotation(vector.new(0, math.atan2(-dir.x, -dir.z), 0))
             end
 
-            minetest.sound_play("shinobi_shuriken_throw", {
+            minetest.sound_play("sns_shuriken_throw", {
                 pos = pos, gain = 0.4, max_hear_distance = 20,
             }, true)
         end
@@ -227,7 +227,7 @@ minetest.register_node("sns:sand_trigger", {
     diggable        = true,
     buildable_to    = false,
     groups          = { not_in_creative_inventory = 1 },
-    inventory_image = "shinobi_sand_trigger_inv.png",
+    inventory_image = "sns_sand_trigger_inv.png",
 })
 
 local sand_triggered = {}  -- position hash → true
@@ -291,7 +291,7 @@ minetest.register_node("sns:dungeon_zone", {
     diggable        = true,
     buildable_to    = false,
     groups          = { not_in_creative_inventory = 1 },
-    inventory_image = "shinobi_dungeon_zone_inv.png",
+    inventory_image = "sns_dungeon_zone_inv.png",
 })
 
 local suspended_privs = {}   -- player_name → { fly=bool, noclip=bool } or {} if none to revoke
@@ -355,7 +355,7 @@ end)
 -- ============================================================
 -- 6. Dungeon Progress Persistence
 -- ============================================================
-local dungeon_progress_file = minetest.get_worldpath() .. "/shinobi_dungeon_progress.json"
+local dungeon_progress_file = minetest.get_worldpath() .. "/sns_dungeon_progress.json"
 local dungeon_data = {}
 
 local function save_dungeon_progress()
@@ -391,12 +391,12 @@ load_dungeon_progress()
 
 -- ============================================================
 -- 6.5 Dungeon Spawning & Entry
--- /dungeon  — places shinobi_dungeon.mts 100 blocks underground
+-- /dungeon  — places sns_dungeon.mts 100 blocks underground
 -- under the player (once per player), then teleports to the entrance.
 -- Subsequent calls just re-teleport to the same dungeon.
 -- ============================================================
 local modpath_d    = minetest.get_modpath("sns")
-local DUNGEON_SCHEM = modpath_d .. "/schems/shinobi_dungeon.mts"
+local DUNGEON_SCHEM = modpath_d .. "/schems/sns_dungeon.mts"
 local DUNGEON_DEPTH = 100   -- blocks below player feet to dungeon top
 
 -- Read .mts binary header to get schematic dimensions.
@@ -598,10 +598,10 @@ minetest.register_node("sns:dungeon_chest", {
     stack_max   = 1,
     node_box    = { type = "fixed", fixed = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 } },
     tiles = {
-        "shinobi_quest_chest_top.png",
-        "shinobi_quest_chest_side.png", "shinobi_quest_chest_side.png",
-        "shinobi_quest_chest_side.png", "shinobi_quest_chest_side.png",
-        "shinobi_quest_chest_front.png",
+        "sns_quest_chest_top.png",
+        "sns_quest_chest_side.png", "sns_quest_chest_side.png",
+        "sns_quest_chest_side.png", "sns_quest_chest_side.png",
+        "sns_quest_chest_front.png",
     },
     paramtype2 = "facedir",
     groups     = { choppy = 2, oddly_breakable_by_hand = 1 },
@@ -640,7 +640,7 @@ minetest.register_node("sns:dungeon_chest", {
             .. "box[0,0;10,8;#1a1200EE]"
             .. "box[0,0;10,0.06;#FFD700FF]box[0,7.94;10,0.06;#FFD700FF]"
             .. "box[0,0;0.06,8;#FFD700FF]box[9.94,0;0.06,8;#FFD700FF]"
-            .. "image[0.3,0.8;3.5,3.5;shinobi_chestplate_inv_" .. armour_colour .. ".png]"
+            .. "image[0.3,0.8;3.5,3.5;sns_chestplate_inv_" .. armour_colour .. ".png]"
             .. "style_type[label;font_size=*1.4;textcolor=#FFD700]"
             .. "label[4.2,0.5;— Trial Concluded —]"
             .. "style_type[label;font_size=*1.05;textcolor=#FFF9C4]"

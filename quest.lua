@@ -25,7 +25,7 @@ local worldpath = minetest.get_worldpath()
 -- ============================================================
 -- Persistence
 -- ============================================================
-local quest_progress_file = worldpath .. "/shinobi_quest_progress.json"
+local quest_progress_file = worldpath .. "/sns_quest_progress.json"
 local quest_data = {}
 
 local function save_progress()
@@ -301,7 +301,7 @@ local quest_rewards = {
     {
         item  = "sns:epic_chestplate",
         name  = "Chestplate of Shinobi",
-        image = "shinobi_chestplate_inv_".. (colour or "cyan") ..".png",
+        image = "sns_chestplate_inv_".. (colour or "cyan") ..".png",
         desc  = {
             "Forged in the dying breath of a fallen warlord,",
             "this chestplate pulses with an ancient fury.",
@@ -317,7 +317,7 @@ local quest_rewards = {
     {
         item  = "sns:epic_headwear",
         name  = "Headwear of Shinobi",
-        image = "shinobi_headwear_inv_".. (colour or "cyan") ..".png",
+        image = "sns_headwear_inv_".. (colour or "cyan") ..".png",
         desc  = {
             "Woven from the threads of twilight itself,",
             "this mask once veiled the face of a phantom",
@@ -334,7 +334,7 @@ local quest_rewards = {
     {
         item  = "sns:epic_hakama",
         name  = "Hakama of Shinobi",
-        image = "shinobi_hakama_inv_".. (colour or "cyan") ..".png",
+        image = "sns_hakama_inv_".. (colour or "cyan") ..".png",
         desc  = {
             "Cut from the silk of a river spirit's robe,",
             "these hakama remember the dance of currents.",
@@ -417,7 +417,7 @@ local function do_spawn_boss(player_name)
         if obj then
             table.insert(spawned, { obj = obj, last_hp = obj:get_hp() or 100, last_pos = bpos, killed = false })
             minetest.log("action",
-                ("[shinobi] Boss spawned at %s"):format(minetest.pos_to_string(bpos)))
+                ("[sns] Boss spawned at %s"):format(minetest.pos_to_string(bpos)))
         else
             minetest.log("warning", ("[sns] add_entity returned nil for %s at %s"):format(
                 entity, minetest.pos_to_string(bpos)))
@@ -456,7 +456,7 @@ local function do_spawn_boss(player_name)
             pdata.reward_index = ri + 1
             if quest_rewards[ri + 1] then
                 pdata.stage = "chest_spawned"
-                swap_arena(player_name, "shinobi_arena_chest.mts")
+                swap_arena(player_name, "sns_arena_chest.mts")
             else
                 pdata.stage = "quest_complete"
             end
@@ -480,7 +480,7 @@ local function start_boss_fight(player_name)
         pdata.reward_index = ri + 1
         if quest_rewards[pdata.reward_index] then
             pdata.stage = "chest_spawned"
-            swap_arena(player_name, "shinobi_arena_chest.mts")
+            swap_arena(player_name, "sns_arena_chest.mts")
         else
             pdata.stage = "quest_complete"
         end
@@ -522,7 +522,7 @@ local function on_all_bosses_defeated(player_name)
 
     if quest_rewards[ri + 1] then
         pdata.stage = "chest_spawned"
-        swap_arena(player_name, "shinobi_arena_chest.mts")
+        swap_arena(player_name, "sns_arena_chest.mts")
         if player then
             show_hud(player,
                 "The beast falls silent. Its essence scatters into the void.\n"
@@ -532,12 +532,12 @@ local function on_all_bosses_defeated(player_name)
         end
     else
         pdata.stage = "quest_complete"
-        swap_arena(player_name, "shinobi_arena_chest.mts")
+        swap_arena(player_name, "sns_arena_chest.mts")
         if player then
             show_hud(player,
                 "Silence falls. The last echo of battle fades into eternity.\n"
                 .. "You have walked the path that few dare tread.\n"
-                .. "The spirits of the ancient shinobi acknowledge you.\n\n"
+                .. "The spirits of the ancient sns acknowledge you.\n\n"
                 .. "You are now... Shinobi no Satori.",
                 0x4FC3F7, 12)
         end
@@ -555,10 +555,10 @@ minetest.register_node("sns:quest_chest", {
     stack_max              = 1,
     node_box               = { type = "fixed", fixed = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 } },
     tiles = {
-        "shinobi_quest_chest_top.png",
-        "shinobi_quest_chest_side.png", "shinobi_quest_chest_side.png",
-        "shinobi_quest_chest_side.png", "shinobi_quest_chest_side.png",
-        "shinobi_quest_chest_front.png",
+        "sns_quest_chest_top.png",
+        "sns_quest_chest_side.png", "sns_quest_chest_side.png",
+        "sns_quest_chest_side.png", "sns_quest_chest_side.png",
+        "sns_quest_chest_front.png",
     },
     paramtype2 = "facedir",
     groups     = { choppy = 2, oddly_breakable_by_hand = 1, chest = 1 },
@@ -635,7 +635,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
         show_hud(player,
             hud_text .. "\n\n"
             .. "Silence falls. The last echo of the trial fades into eternity.\n"
-            .. "The spirits of the ancient shinobi acknowledge you.\n\n"
+            .. "The spirits of the ancient sns acknowledge you.\n\n"
             .. "You are now... Shinobi no Satori.",
             0x4FC3F7, 12)
     else
@@ -655,7 +655,7 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
             if pl then pl:hud_remove(h) end
             local pd = quest_data[pn]
             if not pd then return end
-            swap_arena(pn, "shinobi_arena_boss.mts")
+            swap_arena(pn, "sns_arena_boss.mts")
             minetest.after(5, start_boss_fight, pn)
         end, pname, hid)
     end
@@ -675,7 +675,7 @@ local function spawn_quest_structure(player)
     save_progress()
 
     load_arena(sp)
-    minetest.place_schematic(sp, modpath .. "/schems/shinobi_arena_chest.mts", "0", nil, true)
+    minetest.place_schematic(sp, modpath .. "/schems/sns_arena_chest.mts", "0", nil, true)
     minetest.log("action", "[sns] Placed arena for " .. pname
         .. " at " .. minetest.pos_to_string(sp))
 end
@@ -715,7 +715,7 @@ minetest.register_on_joinplayer(function(player)
             save_progress()
         else
             -- Resume: swap arena and spawn boss
-            swap_arena(pname, "shinobi_arena_boss.mts")
+            swap_arena(pname, "sns_arena_boss.mts")
             minetest.after(5, start_boss_fight, pname)
         end
     end
@@ -1044,7 +1044,7 @@ minetest.register_chatcommand("shinspawn", {
         -- Clear old tracking so do_spawn_boss rebuilds it
         active_bosses[name] = { bosses = {}, respawning = false }
         pdata._spawn_retries = nil
-        minetest.chat_send_player(name, "[shinobi] Force-spawning boss now...")
+        minetest.chat_send_player(name, "[sns] Force-spawning boss now...")
         do_spawn_boss(name)
         return true, "Spawn triggered."
     end,

@@ -36,9 +36,9 @@ local colour = minetest.settings:get("sns.armour_colour") or "cyan"
 -- ============================================================
 armor:register_armor("sns:epic_chestplate", {
     description = "Chestplate of Shinobi",
-    inventory_image = "shinobi_chestplate_inv_" .. colour .. ".png",
-    texture = "shinobi_chestplate_equipped_" .. colour .. ".png",
-    preview = "shinobi_chestplate_inv_" .. colour .. ".png",
+    inventory_image = "sns_chestplate_inv_" .. colour .. ".png",
+    texture = "sns_chestplate_equipped_" .. colour .. ".png",
+    preview = "sns_chestplate_inv_" .. colour .. ".png",
     groups = {
         armor_torso = 1,
         armor_heal = ARMOUR_HEAL,
@@ -87,9 +87,9 @@ end, true)
 -- ============================================================
 armor:register_armor("sns:epic_headwear", {
     description = "Headwear of Shinobi",
-    inventory_image = "shinobi_headwear_inv_" .. colour .. ".png",
-    texture = "shinobi_headwear_equipped_" .. colour .. ".png",
-    preview = "shinobi_headwear_inv_" .. colour .. ".png",
+    inventory_image = "sns_headwear_inv_" .. colour .. ".png",
+    texture = "sns_headwear_equipped_" .. colour .. ".png",
+    preview = "sns_headwear_inv_" .. colour .. ".png",
     groups = {
         armor_head = 1,
         armor_heal = ARMOUR_HEAL,
@@ -118,9 +118,9 @@ armor:register_armor("sns:epic_headwear", {
 -- ============================================================
 armor:register_armor("sns:epic_hakama", {
     description = "Hakama of Shinobi",
-    inventory_image = "shinobi_hakama_inv_" .. colour .. ".png",
-    texture = "shinobi_hakama_equipped_" .. colour .. ".png",
-    preview = "shinobi_hakama_inv_" .. colour .. ".png",
+    inventory_image = "sns_hakama_inv_" .. colour .. ".png",
+    texture = "sns_hakama_equipped_" .. colour .. ".png",
+    preview = "sns_hakama_inv_" .. colour .. ".png",
     groups = {
         armor_legs = 1,
         armor_heal = ARMOUR_HEAL,
@@ -205,7 +205,7 @@ minetest.register_entity("sns:scout_decoy", {
                 maxexptime = 0.8,
                 minsize    = 1.0,
                 maxsize    = 2.5,
-                texture    = "shinobi_shadow_particle.png^[colorize:#000000:200",
+                texture    = "sns_shadow_particle.png^[colorize:#000000:200",
                 glow       = 4,
             })
         end
@@ -768,9 +768,9 @@ end
 -- Elite Chestplate
 armor:register_armor("sns:elite_chestplate", {
     description = "Elite Chestplate of Shinobi",
-    inventory_image = "shinobi_chestplate_inv_" .. colour .. ".png",
-    texture         = "shinobi_chestplate_equipped_" .. colour .. ".png",
-    preview = "shinobi_chestplate_inv_" .. colour .. ".png",
+    inventory_image = "sns_chestplate_inv_" .. colour .. ".png",
+    texture         = "sns_chestplate_equipped_" .. colour .. ".png",
+    preview = "sns_chestplate_inv_" .. colour .. ".png",
     groups = {
         armor_torso = 1,
         armor_heal  = ELITE_HEAL,
@@ -796,9 +796,9 @@ armor:register_armor("sns:elite_chestplate", {
 -- Elite Headwear
 armor:register_armor("sns:elite_headwear", {
     description = "Elite Headwear of Shinobi",
-    inventory_image = "shinobi_headwear_inv_" .. colour .. ".png",
-    texture         = "shinobi_headwear_equipped_" .. colour .. ".png",
-    preview = "shinobi_headwear_inv_" .. colour .. ".png",
+    inventory_image = "sns_headwear_inv_" .. colour .. ".png",
+    texture         = "sns_headwear_equipped_" .. colour .. ".png",
+    preview = "sns_headwear_inv_" .. colour .. ".png",
     groups = {
         armor_head = 1,
         armor_heal = ELITE_HEAL,
@@ -826,9 +826,9 @@ armor:register_armor("sns:elite_headwear", {
 -- Elite Hakama
 armor:register_armor("sns:elite_hakama", {
     description = "Elite Hakama of Shinobi",
-    inventory_image = "shinobi_hakama_inv_" .. colour .. ".png",
-    texture         = "shinobi_hakama_equipped_" .. colour .. ".png",
-    preview = "shinobi_hakama_inv_" .. colour .. ".png",
+    inventory_image = "sns_hakama_inv_" .. colour .. ".png",
+    texture         = "sns_hakama_equipped_" .. colour .. ".png",
+    preview = "sns_hakama_inv_" .. colour .. ".png",
     groups = {
         armor_legs   = 1,
         armor_heal   = ELITE_HEAL,

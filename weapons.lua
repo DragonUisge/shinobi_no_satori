@@ -2,7 +2,7 @@
 -- Fire Shuriken: throwing star that ignites enemies
 -- Ice  Shuriken: throwing star that freezes enemies
 -- Lightning Shuriken: throwing star that stuns and chains to nearby enemies
---   Flight mode is controlled by the 'shinobi_shuriken_mode' setting:
+--   Flight mode is controlled by the 'sns_shuriken_mode' setting:
 --   • "drop"   — (default) sticks in a wall for ~2 s then drops as item;
 --              or falls to the ground if range is reached in mid-air
 --   • "return" — boomerang: curves back and returns to the thrower's inventory
@@ -35,9 +35,9 @@ minetest.register_entity("sns:ice_block", {
     initial_properties = {
         visual              = "cube",
         textures            = {
-            "shinobi_ice_ent.png", "shinobi_ice_ent.png",
-            "shinobi_ice_ent.png", "shinobi_ice_ent.png",
-            "shinobi_ice_ent.png", "shinobi_ice_ent.png",
+            "sns_ice_ent.png", "sns_ice_ent.png",
+            "sns_ice_ent.png", "sns_ice_ent.png",
+            "sns_ice_ent.png", "sns_ice_ent.png",
         },
         visual_size         = { x = 1, y = 2 },
         physical            = false,
@@ -125,7 +125,7 @@ local function freeze_entity(obj)
         ice_ent:set_attach(obj, "", { x = 0, y = center_y * 10, z = 0 }, { x = 0, y = 0, z = 0 })
     end
 
-    minetest.sound_play("shinobi_freeze", {
+    minetest.sound_play("sns_freeze", {
         pos              = opos,
         gain             = 1.0,
         max_hear_distance = 16,
@@ -242,7 +242,7 @@ local function ignite_entity(obj)
                 maxexptime = 0.8,
                 minsize  = 1.0,
                 maxsize  = 2.5,
-                texture  = "shinobi_fire_particle.png",
+                texture  = "sns_fire_particle.png",
                 glow     = 14,
             })
         end
@@ -270,7 +270,7 @@ end
 minetest.register_entity("sns:fire_shuriken", {
     initial_properties = {
         visual            = "upright_sprite",
-        textures           = { "shinobi_fire_shuriken.png" },
+        textures           = { "sns_fire_shuriken.png" },
         visual_size        = { x = 0.5, y = 0.5 },
         physical           = false,
         collide_with_objects = false,
@@ -434,7 +434,7 @@ minetest.register_entity("sns:fire_shuriken", {
                         maxexptime = 0.7,
                         minsize  = 0.8,
                         maxsize  = 2.0,
-                        texture  = "shinobi_fire_particle.png",
+                        texture  = "sns_fire_particle.png",
                         glow     = 14,
                     });
                 end
@@ -497,7 +497,7 @@ local shuriken_cooldown = {} -- player name → timestamp of last throw
 -- ============================================================
 minetest.register_craftitem("sns:fire_shuriken", {
     description      = "Shuriken of Fire",
-    inventory_image  = "shinobi_fire_shuriken_inv.png",
+    inventory_image  = "sns_fire_shuriken_inv.png",
     stack_max        = 20,
 
     on_use = function(itemstack, player, pointed_thing)
@@ -529,7 +529,7 @@ minetest.register_craftitem("sns:fire_shuriken", {
         obj:set_velocity(vector.multiply(dir, SHURIKEN_SPEED))
 
         -- Throw sound
-        minetest.sound_play("shinobi_shuriken_throw", {
+        minetest.sound_play("sns_shuriken_throw", {
             pos    = pos,
             gain   = 0.6,
             max_hear_distance = 16,
@@ -547,7 +547,7 @@ minetest.register_craftitem("sns:fire_shuriken", {
 minetest.register_entity("sns:ice_shuriken", {
     initial_properties = {
         visual             = "upright_sprite",
-        textures           = { "shinobi_ice_shuriken.png" },
+        textures           = { "sns_ice_shuriken.png" },
         visual_size        = { x = 0.5, y = 0.5 },
         physical           = false,
         collide_with_objects = false,
@@ -707,7 +707,7 @@ minetest.register_entity("sns:ice_shuriken", {
                         maxexptime = 0.9,
                         minsize  = 0.6,
                         maxsize  = 1.8,
-                        texture  = "shinobi_ice_particle.png",
+                        texture  = "sns_ice_particle.png",
                         glow     = 12,
                     })
                 end
@@ -760,7 +760,7 @@ minetest.register_entity("sns:ice_shuriken", {
 -- ============================================================
 minetest.register_craftitem("sns:ice_shuriken", {
     description      = "Shuriken of Ice",
-    inventory_image  = "shinobi_ice_shuriken_inv.png",
+    inventory_image  = "sns_ice_shuriken_inv.png",
     stack_max        = 200,
 
     on_use = function(itemstack, player, pointed_thing)
@@ -790,7 +790,7 @@ minetest.register_craftitem("sns:ice_shuriken", {
 
         obj:set_velocity(vector.multiply(dir, SHURIKEN_SPEED))
 
-        minetest.sound_play("shinobi_shuriken_throw", {
+        minetest.sound_play("sns_shuriken_throw", {
             pos    = pos,
             gain   = 0.6,
             max_hear_distance = 16,
@@ -900,7 +900,7 @@ local function spawn_lightning_bolt(target_pos, bolt_nodes)
             maxsize    = size,
             collisiondetection = false,
             vertical   = true,
-            texture    = "shinobi_lightning_" .. variant .. ".png",
+            texture    = "sns_lightning_" .. variant .. ".png",
             glow       = 14,
         })
     end
@@ -917,12 +917,12 @@ local function spawn_lightning_bolt(target_pos, bolt_nodes)
         maxexptime = 0.5,
         minsize    = 0.6,
         maxsize    = 2.0,
-        texture    = "shinobi_lightning_particle.png",
+        texture    = "sns_lightning_particle.png",
         glow       = 15,
     })
 
     -- Thunder sound — Minetest auto-picks among .1/.2/.3/.4 variants
-    minetest.sound_play("thunder", {
+    minetest.sound_play("sns_thunder", {
         pos               = target_pos,
         gain              = 0.9,
         max_hear_distance = 64,
@@ -935,7 +935,7 @@ end
 minetest.register_entity("sns:lightning_shuriken", {
     initial_properties = {
         visual            = "upright_sprite",
-        textures           = { "shinobi_lightning_shuriken.png" },
+        textures           = { "sns_lightning_shuriken.png" },
         visual_size        = { x = 0.5, y = 0.5 },
         physical           = false,
         collide_with_objects = false,
@@ -1158,7 +1158,7 @@ minetest.register_entity("sns:lightning_shuriken", {
 -- ============================================================
 minetest.register_craftitem("sns:lightning_shuriken", {
     description      = "Shuriken of Thunder",
-    inventory_image  = "shinobi_lightning_shuriken_inv.png",
+    inventory_image  = "sns_lightning_shuriken_inv.png",
     stack_max        = 20,
 
     on_use = function(itemstack, player, pointed_thing)
@@ -1187,7 +1187,7 @@ minetest.register_craftitem("sns:lightning_shuriken", {
 
         obj:set_velocity(vector.multiply(dir, SHURIKEN_SPEED))
 
-        minetest.sound_play("shinobi_shuriken_throw", {
+        minetest.sound_play("sns_shuriken_throw", {
             pos    = pos,
             gain   = 0.6,
             max_hear_distance = 16,

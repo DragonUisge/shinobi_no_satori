@@ -2,7 +2,7 @@
 
 [Armour]
 
-# Hide shinobi armour from creative inventory.
+# Hide sns armour from creative inventory.
 # When true, armour can only be obtained through the quest.
 sns.hide_from_creative (Hide armour from creative inventory) bool true
 

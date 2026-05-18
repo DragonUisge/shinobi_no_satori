@@ -9,14 +9,14 @@ Adds a new big Japanese-styled arena for the quest.
 A new quest to obtain the special ninja armour.
 
 ## New Armour with abilities
-- **Headwear of Shinobi** (shinobi_no_satori:epic_headwear): Grants night vision, and by pressing `Sneak/Shift + Right-click` on a wall, you can pass through it.
-- **Chestplate of Shinobi** (shinobi_no_satori:epic_chestplate): Grants an attack bonus and reduces fall damage (configurable, see: Configuration).
-- **Hakama of Shinobi** (shinobi_no_satori:epic_hakama): Grants a speed boost (also configurable) and the ability to sprint across water.
+- **Headwear of Shinobi** (sns:epic_headwear): Grants night vision, and by pressing `Sneak/Shift + Right-click` on a wall, you can pass through it.
+- **Chestplate of Shinobi** (sns:epic_chestplate): Grants an attack bonus and reduces fall damage (configurable, see: Configuration).
+- **Hakama of Shinobi** (sns:epic_hakama): Grants a speed boost (also configurable) and the ability to sprint across water.
 
 ## New Weapons
-- **Shuriken of Fire** (shinobi_no_satori:fire_shuriken): Can be thrown, burns enemies on hit.
-- **Shuriken of Ice** (shinobi_no_satori:ice_shuriken): Same as fire shuriken, but instead freezes enemies.
-- **Shuriken of Thunder** (shinobi_no_satori:lightning_shuriken): Stuns the primary target and arcs to up to 2 nearby enemies, dealing reduced chain damage to each.
+- **Shuriken of Fire** (sns:fire_shuriken): Can be thrown, burns enemies on hit.
+- **Shuriken of Ice** (sns:ice_shuriken): Same as fire shuriken, but instead freezes enemies.
+- **Shuriken of Thunder** (sns:lightning_shuriken): Stuns the primary target and arcs to up to 2 nearby enemies, dealing reduced chain damage to each.
 
 # Configuration
 
