@@ -1,4 +1,6 @@
-local modpath = minetest.get_modpath("shinobi_no_satori")
+sns = sns or {}
+
+local modpath = minetest.get_modpath("sns")
 
 dofile(modpath .. "/armour.lua")
 dofile(modpath .. "/quest.lua")

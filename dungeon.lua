@@ -2,28 +2,28 @@
 -- Trap nodes for the ninja dungeon schematic.
 --
 -- Nodes registered here (place these in your schematic):
---   shinobi_no_satori:spike_floor       — damages players who stand on it
---   shinobi_no_satori:collapse_floor    — crumbles 1.5 s after a player steps near
---   shinobi_no_satori:dart_wall         — shoots darts periodically (use facedir!)
---   shinobi_no_satori:sand_trigger      — invisible ceiling node; sand wall falls when player approaches
---   shinobi_no_satori:dungeon_zone      — invisible marker; revokes fly/noclip while inside
---   shinobi_no_satori:dungeon_chest     — one-time reward chest (elite armour + shurikens + rank)
+--   sns:spike_floor       — damages players who stand on it
+--   sns:collapse_floor    — crumbles 1.5 s after a player steps near
+--   sns:dart_wall         — shoots darts periodically (use facedir!)
+--   sns:sand_trigger      — invisible ceiling node; sand wall falls when player approaches
+--   sns:dungeon_zone      — invisible marker; revokes fly/noclip while inside
+--   sns:dungeon_chest     — one-time reward chest (elite armour + shurikens + rank)
 
 -- Global title table shared with armour.lua (populated from saved data on load)
-shinobi_player_titles = {}
+sns.player_titles = sns.player_titles or {}
 
 local S = minetest.settings
 
-local DART_INTERVAL = tonumber(S:get("shinobi_dart_interval")) or 3.0
-local DART_SPEED    = tonumber(S:get("shinobi_dart_speed"))    or 20
-local DART_DAMAGE   = tonumber(S:get("shinobi_dart_damage"))   or 4
+local DART_INTERVAL = tonumber(S:get("sns.dart_interval")) or 3.0
+local DART_SPEED    = tonumber(S:get("sns.dart_speed"))    or 20
+local DART_DAMAGE   = tonumber(S:get("sns.dart_damage"))   or 4
 local SPIKE_DAMAGE  = 4  -- HP removed per second by spike floor (bypasses armour)
 
 -- ============================================================
 -- 1. Spike Floor
 -- Deals SPIKE_DAMAGE HP/s via ABM — bypasses 3d_armor absorption.
 -- ============================================================
-minetest.register_node("shinobi_no_satori:spike_floor", {
+minetest.register_node("sns:spike_floor", {
     description = "Spike Floor",
     tiles = { "shinobi_spike_floor_top.png", "shinobi_spike_floor_side.png" },
     groups = { cracky = 2 },  -- no damage_per_second: handled by ABM to bypass armour
@@ -32,7 +32,7 @@ minetest.register_node("shinobi_no_satori:spike_floor", {
 
 minetest.register_abm({
     label     = "Spike floor damage (armour bypass)",
-    nodenames = { "shinobi_no_satori:spike_floor" },
+    nodenames = { "sns:spike_floor" },
     interval  = 1.0,
     chance    = 1,
     action    = function(pos, node)
@@ -58,7 +58,7 @@ minetest.register_abm({
 -- ============================================================
 local collapsing = {}   -- position hash → true while countdown is running
 
-minetest.register_node("shinobi_no_satori:collapse_floor", {
+minetest.register_node("sns:collapse_floor", {
     description = "Crumbling Floor",
     tiles = { "shinobi_collapse_floor.png" },
     groups = { cracky = 3 },
@@ -67,7 +67,7 @@ minetest.register_node("shinobi_no_satori:collapse_floor", {
 
 minetest.register_abm({
     label    = "Crumbling floor trigger",
-    nodenames = { "shinobi_no_satori:collapse_floor" },
+    nodenames = { "sns:collapse_floor" },
     interval = 0.4,
     chance   = 1,
     action   = function(pos, node)
@@ -95,7 +95,7 @@ minetest.register_abm({
                 })
 
                 minetest.after(1.5, function()
-                    if minetest.get_node(pos).name == "shinobi_no_satori:collapse_floor" then
+                    if minetest.get_node(pos).name == "sns:collapse_floor" then
                         minetest.remove_node(pos)
                         minetest.sound_play("default_gravel_footstep", {
                             pos = pos, gain = 1.0, max_hear_distance = 16,
@@ -116,7 +116,7 @@ minetest.register_abm({
 -- Place with facedir so the "front" face points toward the
 -- corridor (the dart fires out of the front face).
 -- ============================================================
-minetest.register_entity("shinobi_no_satori:dart", {
+minetest.register_entity("sns:dart", {
     initial_properties = {
         visual              = "upright_sprite",
         textures            = { "shinobi_dart.png" },
@@ -160,7 +160,7 @@ minetest.register_entity("shinobi_no_satori:dart", {
     end,
 })
 
-minetest.register_node("shinobi_no_satori:dart_wall", {
+minetest.register_node("sns:dart_wall", {
     description = "Dart Trap Wall",
     -- Tile order: top, bottom, X+, X-, Z- (back), Z+ (front/dart exit)
     -- tile[6] = Z+ = the face the dart exits from when facedir_to_dir gives +Z
@@ -181,7 +181,7 @@ minetest.register_node("shinobi_no_satori:dart_wall", {
     end,
 
     on_timer = function(pos, elapsed)
-        if minetest.get_node(pos).name ~= "shinobi_no_satori:dart_wall" then
+        if minetest.get_node(pos).name ~= "sns:dart_wall" then
             return false
         end
 
@@ -193,7 +193,7 @@ minetest.register_node("shinobi_no_satori:dart_wall", {
         local sn  = minetest.get_node(spawn_pos)
         local snd = minetest.registered_nodes[sn.name]
         if snd and not snd.walkable then
-            local obj = minetest.add_entity(spawn_pos, "shinobi_no_satori:dart")
+            local obj = minetest.add_entity(spawn_pos, "sns:dart")
             if obj then
                 local lua = obj:get_luaentity()
                 if lua then lua._dir = dir end
@@ -217,7 +217,7 @@ minetest.register_node("shinobi_no_satori:dart_wall", {
 -- filling the corridor — creating a wall only the Headwear of
 -- Shinobi (wall-walk) can pass through.
 -- ============================================================
-minetest.register_node("shinobi_no_satori:sand_trigger", {
+minetest.register_node("sns:sand_trigger", {
     description     = "Sand Trap Trigger (place on ceiling)",
     drawtype        = "airlike",
     paramtype       = "light",
@@ -234,7 +234,7 @@ local sand_triggered = {}  -- position hash → true
 
 minetest.register_abm({
     label     = "Sand ceiling trap trigger",
-    nodenames = { "shinobi_no_satori:sand_trigger" },
+    nodenames = { "sns:sand_trigger" },
     interval  = 0.5,
     chance    = 1,
     action    = function(pos, node)
@@ -281,7 +281,7 @@ minetest.register_abm({
 -- ceiling). Any player inside the zone has fly and noclip
 -- privileges temporarily revoked; they are restored on exit.
 -- ============================================================
-minetest.register_node("shinobi_no_satori:dungeon_zone", {
+minetest.register_node("sns:dungeon_zone", {
     description     = "Dungeon Zone Marker (invisible, no-fly)",
     drawtype        = "airlike",
     paramtype       = "light",
@@ -295,53 +295,49 @@ minetest.register_node("shinobi_no_satori:dungeon_zone", {
 })
 
 local suspended_privs = {}   -- player_name → { fly=bool, noclip=bool } or {} if none to revoke
-local dungeon_timer   = 0
 
-minetest.register_globalstep(function(dtime)
-    dungeon_timer = dungeon_timer + dtime
-    if dungeon_timer < 0.5 then return end
-    dungeon_timer = 0
-
+local function dungeon_zone_tick()
     for _, player in ipairs(minetest.get_connected_players()) do
         local name = player:get_player_name()
         local pos  = player:get_pos()
-        if not pos then goto continue end
+        if pos then
+            local in_dungeon = minetest.find_node_near(
+                pos, 8, { "sns:dungeon_zone" }) ~= nil
 
-        local in_dungeon = minetest.find_node_near(
-            pos, 8, { "shinobi_no_satori:dungeon_zone" }) ~= nil
-
-        if in_dungeon and not suspended_privs[name] then
-            local privs = minetest.get_player_privs(name)
-            if privs.fly or privs.noclip then
-                suspended_privs[name] = {
-                    fly    = privs.fly    or false,
-                    noclip = privs.noclip or false,
-                }
-                privs.fly    = nil
-                privs.noclip = nil
-                minetest.set_player_privs(name, privs)
-                minetest.chat_send_player(name, minetest.colorize(
-                    "#ffcc00", "[Dungeon] Flight is sealed within these walls. Face them with honour."))
-            else
-                suspended_privs[name] = {}  -- mark as inside, nothing to restore
-            end
-
-        elseif not in_dungeon and suspended_privs[name] then
-            local saved = suspended_privs[name]
-            suspended_privs[name] = nil
-            if saved.fly or saved.noclip then
+            if in_dungeon and not suspended_privs[name] then
                 local privs = minetest.get_player_privs(name)
-                if saved.fly    then privs.fly    = true end
-                if saved.noclip then privs.noclip = true end
-                minetest.set_player_privs(name, privs)
-                minetest.chat_send_player(name, minetest.colorize(
-                    "#aaffaa", "[Dungeon] You have left the dungeon. Flight restored."))
+                if privs.fly or privs.noclip then
+                    suspended_privs[name] = {
+                        fly    = privs.fly    or false,
+                        noclip = privs.noclip or false,
+                    }
+                    privs.fly    = nil
+                    privs.noclip = nil
+                    minetest.set_player_privs(name, privs)
+                    minetest.chat_send_player(name, minetest.colorize(
+                        "#ffcc00", "[Dungeon] Flight is sealed within these walls. Face them with honour."))
+                else
+                    suspended_privs[name] = {}
+                end
+
+            elseif not in_dungeon and suspended_privs[name] then
+                local saved = suspended_privs[name]
+                suspended_privs[name] = nil
+                if saved.fly or saved.noclip then
+                    local privs = minetest.get_player_privs(name)
+                    if saved.fly    then privs.fly    = true end
+                    if saved.noclip then privs.noclip = true end
+                    minetest.set_player_privs(name, privs)
+                    minetest.chat_send_player(name, minetest.colorize(
+                        "#aaffaa", "[Dungeon] You have left the dungeon. Flight restored."))
+                end
             end
         end
-
-        ::continue::
     end
-end)
+    minetest.after(0.5, dungeon_zone_tick)
+end
+
+minetest.after(0.5, dungeon_zone_tick)
 
 -- Restore privs if the player disconnects inside the dungeon
 minetest.register_on_leaveplayer(function(player)
@@ -386,7 +382,7 @@ local function load_dungeon_progress()
     -- Populate global title table
     for name, d in pairs(dungeon_data) do
         if type(d) == "table" and d.rank then
-            shinobi_player_titles[name] = d.rank
+            sns.player_titles[name] = d.rank
         end
     end
 end
@@ -399,7 +395,7 @@ load_dungeon_progress()
 -- under the player (once per player), then teleports to the entrance.
 -- Subsequent calls just re-teleport to the same dungeon.
 -- ============================================================
-local modpath_d    = minetest.get_modpath("shinobi_no_satori")
+local modpath_d    = minetest.get_modpath("sns")
 local DUNGEON_SCHEM = modpath_d .. "/schems/shinobi_dungeon.mts"
 local DUNGEON_DEPTH = 100   -- blocks below player feet to dungeon top
 
@@ -418,10 +414,10 @@ end
 
 local DUNG_SIZE = read_mts_size(DUNGEON_SCHEM)
 if DUNG_SIZE then
-    minetest.log("action", ("[shinobi_no_satori] Dungeon schematic: %dx%dx%d"):format(
+    minetest.log("action", ("[sns] Dungeon schematic: %dx%dx%d"):format(
         DUNG_SIZE.x, DUNG_SIZE.y, DUNG_SIZE.z))
 else
-    minetest.log("warning", "[shinobi_no_satori] Could not read dungeon schematic size!")
+    minetest.log("warning", "[sns] Could not read dungeon schematic size!")
 end
 
 -- Scan all four outer-wall centre columns for the entrance.
@@ -485,7 +481,7 @@ local function teleport_to_dungeon(player, sp, sz, announce)
             -- Fallback: horizontal centre, 2 blocks above schematic floor
             tp_pos = { x = sp.x + math.floor(sz.x / 2), y = sp.y + 2,
                        z = sp.z + math.floor(sz.z / 2) }
-            minetest.log("warning", "[shinobi_no_satori] Entrance scan found nothing for "
+            minetest.log("warning", "[sns] Entrance scan found nothing for "
                 .. name .. " — using centre fallback at " .. minetest.pos_to_string(tp_pos))
         end
 
@@ -509,7 +505,7 @@ local function teleport_to_dungeon(player, sp, sz, announce)
                 "#ffcc00", "[Dungeon] You descend once more into the shadows..."))
         end
 
-        minetest.log("action", ("[shinobi_no_satori] %s teleported to dungeon entrance %s"):format(
+        minetest.log("action", ("[sns] %s teleported to dungeon entrance %s"):format(
             name, minetest.pos_to_string(tp_pos)))
     end)
 end
@@ -542,14 +538,18 @@ local function enter_dungeon(player)
         z = math.floor((ppos.z - D / 2) / 16) * 16,
     }
 
-    minetest.place_schematic(sp, DUNGEON_SCHEM, "0", nil, true)
+    local replacements = {}
+    if not minetest.registered_nodes["waterdragon:light_source"] then
+        replacements["waterdragon:light_source"] = "air"
+    end
+    minetest.place_schematic(sp, DUNGEON_SCHEM, "0", replacements, true)
     load_dungeon_area(sp, DUNG_SIZE)
 
     dungeon_data[name]               = dungeon_data[name] or {}
     dungeon_data[name].structure_pos = { x = sp.x, y = sp.y, z = sp.z }
     save_dungeon_progress()
 
-    minetest.log("action", ("[shinobi_no_satori] Dungeon placed for %s at %s"):format(
+    minetest.log("action", ("[sns] Dungeon placed for %s at %s"):format(
         name, minetest.pos_to_string(sp)))
 
     teleport_to_dungeon(player, sp, DUNG_SIZE, true)
@@ -572,12 +572,12 @@ minetest.register_chatcommand("dungeon", {
 -- ============================================================
 local DUNGEON_RANK  = "Jonin"
 local DUNGEON_ITEMS = {
-    { name = "shinobi_no_satori:fire_shuriken",      count = 50 },
-    { name = "shinobi_no_satori:ice_shuriken",       count = 50 },
-    { name = "shinobi_no_satori:lightning_shuriken", count = 50 },
-    { name = "shinobi_no_satori:elite_chestplate",   count = 1  },
-    { name = "shinobi_no_satori:elite_headwear",     count = 1  },
-    { name = "shinobi_no_satori:elite_hakama",       count = 1  },
+    { name = "sns:fire_shuriken",      count = 50 },
+    { name = "sns:ice_shuriken",       count = 50 },
+    { name = "sns:lightning_shuriken", count = 50 },
+    { name = "sns:elite_chestplate",   count = 1  },
+    { name = "sns:elite_headwear",     count = 1  },
+    { name = "sns:elite_hakama",       count = 1  },
 }
 
 local function give_or_drop(player, item_name, count)
@@ -590,9 +590,9 @@ local function give_or_drop(player, item_name, count)
     end
 end
 
-local armour_colour = minetest.settings:get("shinobi_armour_colour") or "cyan"
+local armour_colour = minetest.settings:get("sns.armour_colour") or "cyan"
 
-minetest.register_node("shinobi_no_satori:dungeon_chest", {
+minetest.register_node("sns:dungeon_chest", {
     description = "Dungeon Reward Chest",
     drawtype    = "nodebox",
     stack_max   = 1,
@@ -620,7 +620,7 @@ minetest.register_node("shinobi_no_satori:dungeon_chest", {
         dungeon_data[pname] = dungeon_data[pname] or {}
         dungeon_data[pname].chest_claimed = true
         dungeon_data[pname].rank          = DUNGEON_RANK
-        shinobi_player_titles[pname]      = DUNGEON_RANK
+        sns.player_titles[pname]      = DUNGEON_RANK
         save_dungeon_progress()
 
         -- Set ranked nametag immediately
@@ -656,9 +656,9 @@ minetest.register_node("shinobi_no_satori:dungeon_chest", {
             .. "label[4.2,5.7;Rank granted: JONIN]"
             .. "style[close_btn;bgcolor=#FFD700;textcolor=#1a1200;border=false]"
             .. "button[7.3,7.2;2.3,0.55;close_btn;Close]"
-        minetest.show_formspec(pname, "shinobi_no_satori:dungeon_reward", fs)
+        minetest.show_formspec(pname, "sns:dungeon_reward", fs)
 
-        minetest.log("action", "[shinobi_no_satori] " .. pname
+        minetest.log("action", "[sns] " .. pname
             .. " claimed dungeon reward → rank " .. DUNGEON_RANK)
     end,
 })
@@ -674,7 +674,7 @@ minetest.register_on_joinplayer(function(player)
         if not p then return end
         local d = dungeon_data[name]
         if d and d.rank then
-            shinobi_player_titles[name] = d.rank
+            sns.player_titles[name] = d.rank
             -- Only set if the nametag is currently showing the plain name
             -- (full-set bonus sets it to "", so we don't override that)
             local attrs = p:get_nametag_attributes()
@@ -688,4 +688,4 @@ minetest.register_on_joinplayer(function(player)
     end)
 end)
 
-minetest.log("action", "[shinobi_no_satori] Dungeon traps loaded")
+minetest.log("action", "[sns] Dungeon traps loaded")

@@ -17,28 +17,28 @@ local hakama_users        = {} -- players wearing the hakama (water walk)
 -- ============================================================
 local S                   = minetest.settings
 
-local HIDE_FROM_CREATIVE  = S:get_bool("shinobi_hide_from_creative", true)
-local ARMOUR_HEAL         = tonumber(S:get("shinobi_armour_heal")) or 18
-local DAMAGE_MULTIPLIER     = tonumber(S:get("shinobi_damage_multiplier")) or 1.8
-local NIGHT_VISION_RATIO    = tonumber(S:get("shinobi_night_vision_ratio")) or 0.6
-local SPEED_BOOST           = tonumber(S:get("shinobi_speed_boost")) or 0.6
-local FALL_DAMAGE_REDUCTION = tonumber(S:get("shinobi_fall_damage_reduction")) or 0.5
+local HIDE_FROM_CREATIVE  = S:get_bool("sns.hide_from_creative", true)
+local ARMOUR_HEAL         = tonumber(S:get("sns.armour_heal")) or 18
+local DAMAGE_MULTIPLIER     = tonumber(S:get("sns.damage_multiplier")) or 1.8
+local NIGHT_VISION_RATIO    = tonumber(S:get("sns.night_vision_ratio")) or 0.6
+local SPEED_BOOST           = tonumber(S:get("sns.speed_boost")) or 0.6
+local FALL_DAMAGE_REDUCTION = tonumber(S:get("sns.fall_damage_reduction")) or 0.5
 local WATER_WALK_INTERVAL = 0.1
-local SET_BONUS           = S:get("shinobi_set_bonus") or "both"
-local SCOUT_COOLDOWN      = tonumber(S:get("shinobi_set_bonus_scout_cooldown")) or 20.0
+local SET_BONUS           = S:get("sns.set_bonus") or "both"
+local SCOUT_COOLDOWN      = tonumber(S:get("sns.set_bonus_scout_cooldown")) or 20.0
 
 local creative_group      = HIDE_FROM_CREATIVE and 1 or 0
 
-local colour = minetest.settings:get("shinobi_armour_colour") or "cyan"
+local colour = minetest.settings:get("sns.armour_colour") or "cyan"
 
 -- ============================================================
 -- Chestplate of Shinobi — increased melee damage
 -- ============================================================
-armor:register_armor("shinobi_no_satori:epic_chestplate", {
+armor:register_armor("sns:epic_chestplate", {
     description = "Chestplate of Shinobi",
     inventory_image = "shinobi_chestplate_inv_" .. colour .. ".png",
     texture = "shinobi_chestplate_equipped_" .. colour .. ".png",
-    preview = "shinobi_chestplate_preview_" .. colour .. ".png",
+    preview = "shinobi_chestplate_inv_" .. colour .. ".png",
     groups = {
         armor_torso = 1,
         armor_heal = ARMOUR_HEAL,
@@ -85,11 +85,11 @@ end, true)
 -- ============================================================
 -- Headwear of Shinobi — night vision + something like noclip
 -- ============================================================
-armor:register_armor("shinobi_no_satori:epic_headwear", {
+armor:register_armor("sns:epic_headwear", {
     description = "Headwear of Shinobi",
     inventory_image = "shinobi_headwear_inv_" .. colour .. ".png",
     texture = "shinobi_headwear_equipped_" .. colour .. ".png",
-    preview = "shinobi_headwear_preview_" .. colour .. ".png",
+    preview = "shinobi_headwear_inv_" .. colour .. ".png",
     groups = {
         armor_head = 1,
         armor_heal = ARMOUR_HEAL,
@@ -116,11 +116,11 @@ armor:register_armor("shinobi_no_satori:epic_headwear", {
 -- ============================================================
 -- Hakama of Shinobi — water walking + speed boost
 -- ============================================================
-armor:register_armor("shinobi_no_satori:epic_hakama", {
+armor:register_armor("sns:epic_hakama", {
     description = "Hakama of Shinobi",
     inventory_image = "shinobi_hakama_inv_" .. colour .. ".png",
     texture = "shinobi_hakama_equipped_" .. colour .. ".png",
-    preview = "shinobi_hakama_preview_" .. colour .. ".png",
+    preview = "shinobi_hakama_inv_" .. colour .. ".png",
     groups = {
         armor_legs = 1,
         armor_heal = ARMOUR_HEAL,
@@ -152,7 +152,7 @@ local scout_data = {}           -- name → { orig_textures, decoy_pos }
 local scout_hp_cache = {}       -- entity_id → hp, for mob damage watchdog
 
 -- Ghost entity for the scout: the decoy body left behind
-minetest.register_entity("shinobi_no_satori:scout_decoy", {
+minetest.register_entity("sns:scout_decoy", {
     initial_properties = {
         visual = "mesh",
         mesh = "3d_armor_character.b3d",
@@ -244,7 +244,7 @@ local function remove_full_set(player)
     full_set_users[name] = nil
 
     -- Respect dungeon rank title when restoring nametag
-    local title   = shinobi_player_titles and shinobi_player_titles[name]
+    local title   = sns.player_titles and sns.player_titles[name]
     local display = title and (minetest.colorize("#FFD700", "[" .. title .. "]") .. " " .. name) or name
     player:set_nametag_attributes({ text = display, bgcolor = false })
     player:set_properties({ visual_size = { x = 1, y = 1 } })
@@ -256,7 +256,7 @@ local function remove_full_set(player)
 end
 
 -- Called from each armor on_equip / on_unequip
-function check_full_set(player)
+local function check_full_set(player)
     local name = player:get_player_name()
     if has_full_set(name) then
         apply_full_set(player)
@@ -265,12 +265,12 @@ function check_full_set(player)
     end
 end
 
-function clear_full_set(player)
+local function clear_full_set(player)
     remove_full_set(player)
 end
 
 -- ---- Scout camera ----
-function end_scout(player)
+local function end_scout(player)
     local name = player:get_player_name()
     scout_active[name] = nil
 
@@ -324,7 +324,7 @@ local function begin_scout(player)
     local pos = player:get_pos()
 
     -- Spawn a decoy with the player's REAL skin + armor appearance
-    local decoy = minetest.add_entity(pos, "shinobi_no_satori:scout_decoy")
+    local decoy = minetest.add_entity(pos, "sns:scout_decoy")
     if decoy then
         local ent = decoy:get_luaentity()
         if ent then ent._owner = name end
@@ -454,7 +454,7 @@ end
 
 -- ---- Visual ghost entity ----
 -- We hide the real player model and show a rotated entity instead
-minetest.register_entity("shinobi_no_satori:wall_ghost", {
+minetest.register_entity("sns:wall_ghost", {
     initial_properties = {
         visual = "mesh",
         mesh = "3d_armor_character.b3d",
@@ -504,7 +504,7 @@ local function spawn_ghost(player, wall_dir)
     end
 
     local pos = player:get_pos()
-    local ghost = minetest.add_entity(pos, "shinobi_no_satori:wall_ghost")
+    local ghost = minetest.add_entity(pos, "sns:wall_ghost")
     if ghost then
         local ent = ghost:get_luaentity()
         if ent then
@@ -575,7 +575,7 @@ minetest.register_globalstep(function(dtime)
     for _, player in ipairs(minetest.get_connected_players()) do
         local name = player:get_player_name()
         local pos  = player:get_pos()
-        if not pos then goto continue end
+        if pos then
 
         -- ========== FULL-SET BONUS: SCOUT ACTIVATION ==========
         if SET_BONUS == "scout" and full_set_users[name] then
@@ -687,7 +687,7 @@ minetest.register_globalstep(function(dtime)
             end
         end
 
-        ::continue::
+        end  -- pos guard
     end
 end)
 
@@ -725,9 +725,9 @@ end)
 --   • Higher speed bonus
 --   • Full set: raises max HP to ELITE_HP_MAX
 -- ============================================================
-local ELITE_HEAL    = tonumber(S:get("shinobi_elite_armour_heal")) or 30
-local ELITE_SPEED   = tonumber(S:get("shinobi_elite_speed_boost")) or 0.9
-local ELITE_HP_MAX  = tonumber(S:get("shinobi_elite_hp_max"))      or 30
+local ELITE_HEAL    = tonumber(S:get("sns.elite_armour_heal")) or 30
+local ELITE_SPEED   = tonumber(S:get("sns.elite_speed_boost")) or 0.9
+local ELITE_HP_MAX  = tonumber(S:get("sns.elite_hp_max"))      or 30
 
 local elite_cp_users = {}
 local elite_hw_users = {}
@@ -766,11 +766,11 @@ local function check_elite_set(player)
 end
 
 -- Elite Chestplate
-armor:register_armor("shinobi_no_satori:elite_chestplate", {
+armor:register_armor("sns:elite_chestplate", {
     description = "Elite Chestplate of Shinobi",
     inventory_image = "shinobi_chestplate_inv_" .. colour .. ".png",
     texture         = "shinobi_chestplate_equipped_" .. colour .. ".png",
-    preview         = "shinobi_chestplate_preview_" .. colour .. ".png",
+    preview = "shinobi_chestplate_inv_" .. colour .. ".png",
     groups = {
         armor_torso = 1,
         armor_heal  = ELITE_HEAL,
@@ -794,11 +794,11 @@ armor:register_armor("shinobi_no_satori:elite_chestplate", {
 })
 
 -- Elite Headwear
-armor:register_armor("shinobi_no_satori:elite_headwear", {
+armor:register_armor("sns:elite_headwear", {
     description = "Elite Headwear of Shinobi",
     inventory_image = "shinobi_headwear_inv_" .. colour .. ".png",
     texture         = "shinobi_headwear_equipped_" .. colour .. ".png",
-    preview         = "shinobi_headwear_preview_" .. colour .. ".png",
+    preview = "shinobi_headwear_inv_" .. colour .. ".png",
     groups = {
         armor_head = 1,
         armor_heal = ELITE_HEAL,
@@ -824,11 +824,11 @@ armor:register_armor("shinobi_no_satori:elite_headwear", {
 })
 
 -- Elite Hakama
-armor:register_armor("shinobi_no_satori:elite_hakama", {
+armor:register_armor("sns:elite_hakama", {
     description = "Elite Hakama of Shinobi",
     inventory_image = "shinobi_hakama_inv_" .. colour .. ".png",
     texture         = "shinobi_hakama_equipped_" .. colour .. ".png",
-    preview         = "shinobi_hakama_preview_" .. colour .. ".png",
+    preview = "shinobi_hakama_inv_" .. colour .. ".png",
     groups = {
         armor_legs   = 1,
         armor_heal   = ELITE_HEAL,
@@ -852,4 +852,4 @@ armor:register_armor("shinobi_no_satori:elite_hakama", {
     end,
 })
 
-minetest.log("action", "[shinobi_no_satori] Armour loaded")
+minetest.log("action", "[sns] Armour loaded")

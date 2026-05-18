@@ -12,26 +12,26 @@ local S = minetest.settings
 -- ============================================================
 -- Settings
 -- ============================================================
-local SHURIKEN_SPEED       = tonumber(S:get("shinobi_shuriken_speed"))       or 22
-local SHURIKEN_RANGE       = tonumber(S:get("shinobi_shuriken_range"))       or 18
-local SHURIKEN_DAMAGE      = tonumber(S:get("shinobi_shuriken_damage"))      or 6
-local SHURIKEN_FREEZE_TIME = tonumber(S:get("shinobi_shuriken_freeze_time")) or 3.0
-local SHURIKEN_BURN_TIME   = tonumber(S:get("shinobi_shuriken_burn_time"))   or 4.0
-local SHURIKEN_HIT_RADIUS  = tonumber(S:get("shinobi_shuriken_hit_radius")) or 1.8
-local SHURIKEN_COOLDOWN    = tonumber(S:get("shinobi_shuriken_cooldown"))    or 1.0
-local SHURIKEN_MODE        = S:get("shinobi_shuriken_mode") or "drop"
+local SHURIKEN_SPEED       = tonumber(S:get("sns.shuriken_speed"))       or 22
+local SHURIKEN_RANGE       = tonumber(S:get("sns.shuriken_range"))       or 18
+local SHURIKEN_DAMAGE      = tonumber(S:get("sns.shuriken_damage"))      or 6
+local SHURIKEN_FREEZE_TIME = tonumber(S:get("sns.shuriken_freeze_time")) or 3.0
+local SHURIKEN_BURN_TIME   = tonumber(S:get("sns.shuriken_burn_time"))   or 4.0
+local SHURIKEN_HIT_RADIUS  = tonumber(S:get("sns.shuriken_hit_radius")) or 1.8
+local SHURIKEN_COOLDOWN    = tonumber(S:get("sns.shuriken_cooldown"))    or 1.0
+local SHURIKEN_MODE        = S:get("sns.shuriken_mode") or "drop"
 
 -- Lightning shuriken settings
-local LIGHTNING_DAMAGE       = tonumber(S:get("shinobi_lightning_damage"))       or 8
-local LIGHTNING_STUN_TIME    = tonumber(S:get("shinobi_lightning_stun_time"))    or 0.8
-local LIGHTNING_CHAIN_COUNT  = tonumber(S:get("shinobi_lightning_chain_count"))  or 2
-local LIGHTNING_CHAIN_RANGE  = tonumber(S:get("shinobi_lightning_chain_range"))  or 6
-local LIGHTNING_CHAIN_MULT   = tonumber(S:get("shinobi_lightning_chain_mult"))   or 0.5
+local LIGHTNING_DAMAGE       = tonumber(S:get("sns.lightning_damage"))       or 8
+local LIGHTNING_STUN_TIME    = tonumber(S:get("sns.lightning_stun_time"))    or 0.8
+local LIGHTNING_CHAIN_COUNT  = tonumber(S:get("sns.lightning_chain_count"))  or 2
+local LIGHTNING_CHAIN_RANGE  = tonumber(S:get("sns.lightning_chain_range"))  or 6
+local LIGHTNING_CHAIN_MULT   = tonumber(S:get("sns.lightning_chain_mult"))   or 0.5
 
 -- ============================================================
 -- Ice block visual entity
 -- ============================================================
-minetest.register_entity("shinobi_no_satori:ice_block", {
+minetest.register_entity("sns:ice_block", {
     initial_properties = {
         visual              = "cube",
         textures            = {
@@ -109,7 +109,7 @@ local function freeze_entity(obj)
     local opos    = obj:get_pos()
     local ice_ent = minetest.add_entity(
         { x = opos.x, y = opos.y + center_y, z = opos.z },
-        "shinobi_no_satori:ice_block"
+        "sns:ice_block"
     )
     if ice_ent then
         local ie = ice_ent:get_luaentity()
@@ -267,7 +267,7 @@ end
 -- ============================================================
 -- Fire Shuriken entity  (burn only, no freeze)
 -- ============================================================
-minetest.register_entity("shinobi_no_satori:fire_shuriken", {
+minetest.register_entity("sns:fire_shuriken", {
     initial_properties = {
         visual            = "upright_sprite",
         textures           = { "shinobi_fire_shuriken.png" },
@@ -401,18 +401,13 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
                 local is_player = obj:is_player()
                 local lua = obj:get_luaentity()
 
-                -- Skip other shuriken and non-entity items
-                if lua and (lua.name == "shinobi_no_satori:fire_shuriken"
-                         or lua.name == "shinobi_no_satori:ice_shuriken") then
-                    goto continue
-                end
-                if lua and lua.name == "__builtin:item" then
-                    goto continue
-                end
-                if lua and lua.name == "__builtin:falling_node" then
-                    goto continue
-                end
+                local skip = lua and (
+                    lua.name == "sns:fire_shuriken"
+                    or lua.name == "sns:ice_shuriken"
+                    or lua.name == "__builtin:item"
+                    or lua.name == "__builtin:falling_node")
 
+                if not skip then
                 -- Valid target
                 self._hit_set.add(obj)
 
@@ -441,10 +436,10 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
                         maxsize  = 2.0,
                         texture  = "shinobi_fire_particle.png",
                         glow     = 14,
-                    })
+                    });
                 end
 
-                ::continue::
+                end  -- not skip
             end
         end
 
@@ -471,7 +466,7 @@ minetest.register_entity("shinobi_no_satori:fire_shuriken", {
         end
     end,
 
-    _item_name = "shinobi_no_satori:fire_shuriken",
+    _item_name = "sns:fire_shuriken",
 
     _return_to_player = function(self)
         local thrower = self._thrower
@@ -500,7 +495,7 @@ local shuriken_cooldown = {} -- player name → timestamp of last throw
 -- ============================================================
 -- Fire Shuriken item
 -- ============================================================
-minetest.register_craftitem("shinobi_no_satori:fire_shuriken", {
+minetest.register_craftitem("sns:fire_shuriken", {
     description      = "Shuriken of Fire",
     inventory_image  = "shinobi_fire_shuriken_inv.png",
     stack_max        = 20,
@@ -521,7 +516,7 @@ minetest.register_craftitem("shinobi_no_satori:fire_shuriken", {
 
         local dir = player:get_look_dir()
 
-        local obj = minetest.add_entity(pos, "shinobi_no_satori:fire_shuriken")
+        local obj = minetest.add_entity(pos, "sns:fire_shuriken")
         if not obj then return end
 
         local lua = obj:get_luaentity()
@@ -549,7 +544,7 @@ minetest.register_craftitem("shinobi_no_satori:fire_shuriken", {
 -- ============================================================
 -- Ice Shuriken entity  (freeze only, no burn)
 -- ============================================================
-minetest.register_entity("shinobi_no_satori:ice_shuriken", {
+minetest.register_entity("sns:ice_shuriken", {
     initial_properties = {
         visual             = "upright_sprite",
         textures           = { "shinobi_ice_shuriken.png" },
@@ -572,7 +567,7 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
     _hit_set     = nil,
     _age         = 0,
     _spin        = 0,
-    _item_name   = "shinobi_no_satori:ice_shuriken",
+    _item_name   = "sns:ice_shuriken",
 
     on_activate = function(self, staticdata, dtime_s)
         self._hit_set = make_hit_set()
@@ -678,17 +673,13 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
             if obj ~= self.object and obj ~= thrower and not self._hit_set.has(obj) then
                 local lua = obj:get_luaentity()
 
-                if lua and (lua.name == "shinobi_no_satori:fire_shuriken"
-                         or lua.name == "shinobi_no_satori:ice_shuriken") then
-                    goto continue
-                end
-                if lua and lua.name == "__builtin:item" then
-                    goto continue
-                end
-                if lua and lua.name == "__builtin:falling_node" then
-                    goto continue
-                end
+                local skip = lua and (
+                    lua.name == "sns:fire_shuriken"
+                    or lua.name == "sns:ice_shuriken"
+                    or lua.name == "__builtin:item"
+                    or lua.name == "__builtin:falling_node")
 
+                if not skip then
                 self._hit_set.add(obj)
 
                 -- Punch damage
@@ -721,7 +712,7 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
                     })
                 end
 
-                ::continue::
+                end  -- not skip
             end
         end
 
@@ -767,7 +758,7 @@ minetest.register_entity("shinobi_no_satori:ice_shuriken", {
 -- ============================================================
 -- Ice Shuriken item
 -- ============================================================
-minetest.register_craftitem("shinobi_no_satori:ice_shuriken", {
+minetest.register_craftitem("sns:ice_shuriken", {
     description      = "Shuriken of Ice",
     inventory_image  = "shinobi_ice_shuriken_inv.png",
     stack_max        = 200,
@@ -787,7 +778,7 @@ minetest.register_craftitem("shinobi_no_satori:ice_shuriken", {
 
         local dir = player:get_look_dir()
 
-        local obj = minetest.add_entity(pos, "shinobi_no_satori:ice_shuriken")
+        local obj = minetest.add_entity(pos, "sns:ice_shuriken")
         if not obj then return end
 
         local lua = obj:get_luaentity()
@@ -941,7 +932,7 @@ end
 -- ============================================================
 -- Lightning Shuriken entity
 -- ============================================================
-minetest.register_entity("shinobi_no_satori:lightning_shuriken", {
+minetest.register_entity("sns:lightning_shuriken", {
     initial_properties = {
         visual            = "upright_sprite",
         textures           = { "shinobi_lightning_shuriken.png" },
@@ -964,7 +955,7 @@ minetest.register_entity("shinobi_no_satori:lightning_shuriken", {
     _hit_set     = nil,
     _age         = 0,
     _spin        = 0,
-    _item_name   = "shinobi_no_satori:lightning_shuriken",
+    _item_name   = "sns:lightning_shuriken",
 
     on_activate = function(self, staticdata, dtime_s)
         self._hit_set = make_hit_set()
@@ -1060,12 +1051,15 @@ minetest.register_entity("shinobi_no_satori:lightning_shuriken", {
         for _, obj in ipairs(objs) do
             if obj ~= self.object and obj ~= thrower and not self._hit_set.has(obj) then
                 local lua = obj:get_luaentity()
-                if lua and (lua.name == "shinobi_no_satori:fire_shuriken"
-                         or lua.name == "shinobi_no_satori:ice_shuriken"
-                         or lua.name == "shinobi_no_satori:lightning_shuriken") then goto continue end
-                if lua and lua.name == "__builtin:item" then goto continue end
-                if lua and lua.name == "__builtin:falling_node" then goto continue end
 
+                local skip = lua and (
+                    lua.name == "sns:fire_shuriken"
+                    or lua.name == "sns:ice_shuriken"
+                    or lua.name == "sns:lightning_shuriken"
+                    or lua.name == "__builtin:item"
+                    or lua.name == "__builtin:falling_node")
+
+                if not skip then
                 self._hit_set.add(obj)
 
                 local hit_pos = obj:get_pos()
@@ -1086,18 +1080,19 @@ minetest.register_entity("shinobi_no_satori:lightning_shuriken", {
                 local chain_count = 0
                 for _, cobj in ipairs(chain_targets) do
                     if chain_count >= LIGHTNING_CHAIN_COUNT then break end
-                    if cobj == obj or cobj == self.object or cobj == thrower then goto chain_continue end
-                    if self._hit_set.has(cobj) then goto chain_continue end
+                    if cobj ~= obj and cobj ~= self.object and cobj ~= thrower
+                       and not self._hit_set.has(cobj) then
 
-                    local clua = cobj:get_luaentity()
-                    if clua and (clua.name == "shinobi_no_satori:fire_shuriken"
-                              or clua.name == "shinobi_no_satori:ice_shuriken"
-                              or clua.name == "shinobi_no_satori:lightning_shuriken"
+                        local clua = cobj:get_luaentity()
+                        if not (clua and (
+                              clua.name == "sns:fire_shuriken"
+                              or clua.name == "sns:ice_shuriken"
+                              or clua.name == "sns:lightning_shuriken"
                               or clua.name == "__builtin:item"
-                              or clua.name == "__builtin:falling_node") then goto chain_continue end
+                              or clua.name == "__builtin:falling_node")) then
 
-                    self._hit_set.add(cobj)
-                    chain_count = chain_count + 1
+                        self._hit_set.add(cobj)
+                        chain_count = chain_count + 1
 
                     local cpos = cobj:get_pos()
                     local chain_dmg = math.max(1, math.floor(LIGHTNING_DAMAGE * LIGHTNING_CHAIN_MULT))
@@ -1111,12 +1106,12 @@ minetest.register_entity("shinobi_no_satori:lightning_shuriken", {
                         stun_entity(cobj, LIGHTNING_STUN_TIME * 0.6)
                         -- Smaller arc bolt for chain targets
                         if cpos then spawn_lightning_bolt(cpos, 8) end
-                    end
+                        end
+                        end  -- not skip clua
+                    end  -- not excluded cobj
+                end  -- chain loop
 
-                    ::chain_continue::
-                end
-
-                ::continue::
+                end  -- not skip
             end
         end
 
@@ -1161,7 +1156,7 @@ minetest.register_entity("shinobi_no_satori:lightning_shuriken", {
 -- ============================================================
 -- Lightning Shuriken item
 -- ============================================================
-minetest.register_craftitem("shinobi_no_satori:lightning_shuriken", {
+minetest.register_craftitem("sns:lightning_shuriken", {
     description      = "Shuriken of Thunder",
     inventory_image  = "shinobi_lightning_shuriken_inv.png",
     stack_max        = 20,
@@ -1180,7 +1175,7 @@ minetest.register_craftitem("shinobi_no_satori:lightning_shuriken", {
         pos.y = pos.y + 1.5
         local dir = player:get_look_dir()
 
-        local obj = minetest.add_entity(pos, "shinobi_no_satori:lightning_shuriken")
+        local obj = minetest.add_entity(pos, "sns:lightning_shuriken")
         if not obj then return end
 
         local lua = obj:get_luaentity()
@@ -1208,7 +1203,7 @@ minetest.register_craftitem("shinobi_no_satori:lightning_shuriken", {
 --fire_shuriken
 
 minetest.register_craft({
-    output = "shinobi_no_satori:fire_shuriken 5",
+    output = "sns:fire_shuriken 5",
     recipe = {
         { "default:steel_ingot", "", "default:steel_ingot" },
         { "", "default:stick", "" },
@@ -1217,7 +1212,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:fire_shuriken 5",
+    output = "sns:fire_shuriken 5",
     recipe = {
         { "default:coal_lump", "", "default:coal_lump" },
         { "", "default:stick", "" },
@@ -1226,7 +1221,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:fire_shuriken 5",
+    output = "sns:fire_shuriken 5",
     recipe = {
         { "default:torch", "", "default:torch" },
         { "", "default:stick", "" },
@@ -1235,7 +1230,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:fire_shuriken 5",
+    output = "sns:fire_shuriken 5",
     recipe = {
         { "default:lava_source", "", "default:lava_source" },
         { "", "default:stick", "" },
@@ -1246,7 +1241,7 @@ minetest.register_craft({
 --ice_shuriken
 
 minetest.register_craft({
-    output = "shinobi_no_satori:ice_shuriken 5",
+    output = "sns:ice_shuriken 5",
     recipe = {
         { "default:ice", "", "default:ice" },
         { "", "default:stick", "" },
@@ -1255,7 +1250,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:ice_shuriken 5",
+    output = "sns:ice_shuriken 5",
     recipe = {
         { "default:snowblock", "", "default:snowblock" },
         { "", "default:stick", "" },
@@ -1264,7 +1259,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:ice_shuriken 5",
+    output = "sns:ice_shuriken 5",
     recipe = {
         { "default:water_source", "", "default:water_source" },
         { "", "default:stick", "" },
@@ -1273,7 +1268,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:ice_shuriken 5",
+    output = "sns:ice_shuriken 5",
     recipe = {
         { "default:river_water_source", "", "default:river_water_source" },
         { "", "default:stick", "" },
@@ -1282,7 +1277,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:ice_shuriken 5",
+    output = "sns:ice_shuriken 5",
     recipe = {
         { "default:ice", "", "default:snowblock" },
         { "", "default:stick", "" },
@@ -1291,7 +1286,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:ice_shuriken 5",
+    output = "sns:ice_shuriken 5",
     recipe = {
         { "default:ice", "", "default:water_source" },
         { "", "default:stick", "" },
@@ -1300,7 +1295,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:ice_shuriken 5",
+    output = "sns:ice_shuriken 5",
     recipe = {
         { "default:snowblock", "", "default:water_source" },
         { "", "default:stick", "" },
@@ -1311,7 +1306,7 @@ minetest.register_craft({
 --lightning_shuriken
 -- Requires a mese crystal (electrical) + steel + gold ingot (conductors)
 minetest.register_craft({
-    output = "shinobi_no_satori:lightning_shuriken 5",
+    output = "sns:lightning_shuriken 5",
     recipe = {
         { "default:mese_crystal", "", "default:mese_crystal" },
         { "", "default:stick", "" },
@@ -1320,7 +1315,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:lightning_shuriken 5",
+    output = "sns:lightning_shuriken 5",
     recipe = {
         { "default:mese_crystal_fragment", "", "default:mese_crystal_fragment" },
         { "", "default:stick", "" },
@@ -1329,7 +1324,7 @@ minetest.register_craft({
 })
 
 minetest.register_craft({
-    output = "shinobi_no_satori:lightning_shuriken 5",
+    output = "sns:lightning_shuriken 5",
     recipe = {
         { "default:mese", "", "default:mese" },
         { "", "default:stick", "" },
@@ -1337,4 +1332,4 @@ minetest.register_craft({
     },
 })
 
-minetest.log("action", "[shinobi_no_satori] Shuriken weapons loaded")
+minetest.log("action", "[sns] Shuriken weapons loaded")
