@@ -19,3 +19,20 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+-------------------------------------------------------------------------------
+Third-party assets
+-------------------------------------------------------------------------------
+
+textures/nodes/dungeon/sns_dart_wall_top.png
+textures/nodes/dungeon/sns_dart_wall_side.png
+
+  These textures are derivative works of default_cobble.png from Minetest Game
+  (https://github.com/minetest/minetest_game).
+
+  Original author: Cisoun
+  Licence: Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)
+  https://creativecommons.org/licenses/by-sa/3.0/
+
+  Modifications by Scottii, 2026. The derivative work is distributed under the
+  same CC BY-SA 3.0 licence.

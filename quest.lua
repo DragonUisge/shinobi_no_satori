@@ -375,14 +375,18 @@ end
 -- ============================================================
 local active_bosses = {}
 
--- Per-player HUD warn cooldowns (counts 0.5s globalstep ticks).
-local warn_ticks = {}   -- player_name → ticks remaining
+-- Per-player HUD warn cooldowns (boolean flag cleared by minetest.after).
+local warn_cooldown = {}  -- player_name → true while on cooldown
 
 local function can_warn(pname)
-    return not warn_ticks[pname] or warn_ticks[pname] <= 0
+    return not warn_cooldown[pname]
 end
 local function set_warn_cooldown(pname, ticks)
-    warn_ticks[pname] = ticks or 12   -- default 12 * 0.5 s = 6 s
+    local seconds = (ticks or 12) * 0.5  -- ticks were 0.5s each
+    warn_cooldown[pname] = true
+    minetest.after(seconds, function()
+        warn_cooldown[pname] = nil
+    end)
 end
 
 -- ============================================================
@@ -722,23 +726,11 @@ minetest.register_on_joinplayer(function(player)
 end)
 
 -- ============================================================
--- Main globalstep  (runs every STEP_INTERVAL seconds)
+-- Main quest loop  (runs every STEP_INTERVAL seconds via minetest.after)
 -- ============================================================
 local STEP_INTERVAL = 0.5
-local gstep_timer   = 0
 
-minetest.register_globalstep(function(dtime)
-    gstep_timer = gstep_timer + dtime
-    if gstep_timer < STEP_INTERVAL then return end
-    gstep_timer = 0
-
-    -- Decrement warn cooldowns
-    for pn, ticks in pairs(warn_ticks) do
-        if ticks > 0 then
-            warn_ticks[pn] = ticks - 1
-        end
-    end
-
+local function quest_tick()
     for _, player in ipairs(minetest.get_connected_players()) do
         local pname = player:get_player_name()
         local pdata = quest_data[pname]
@@ -913,7 +905,9 @@ minetest.register_globalstep(function(dtime)
         end  -- stage elseif
 
     end  -- player loop
-end)
+    minetest.after(STEP_INTERVAL, quest_tick)
+end
+minetest.after(STEP_INTERVAL, quest_tick)
 
 -- ============================================================
 -- Chat commands

@@ -562,16 +562,42 @@ end
 
 
 -- ============================================================
--- Globalstep: wall-phasing + water walking
+-- Water walking loop (every WATER_WALK_INTERVAL via minetest.after)
 -- ============================================================
-local wt_timer = 0
+local function water_walk_tick()
+    for _, player in ipairs(minetest.get_connected_players()) do
+        local name = player:get_player_name()
+        if hakama_users[name] then
+            local pos = player:get_pos()
+            if pos then
+                local controls = player:get_player_control()
+                local function node_at(y_off)
+                    local n = minetest.get_node({ x = pos.x, y = pos.y + y_off, z = pos.z })
+                    local d = minetest.registered_nodes[n.name]
+                    return d and d.liquidtype ~= "none"
+                end
+                local on_water = node_at(-0.1) or node_at(0.0) or node_at(0.3)
+                local moving = controls.up or controls.down or controls.left or controls.right
+                if on_water and moving and controls.aux1 then
+                    local vel = player:get_velocity()
+                    if vel and vel.y ~= 0 then
+                        player:add_velocity({ x = 0, y = -vel.y, z = 0 })
+                    end
+                    player:set_physics_override({ gravity = 0 })
+                else
+                    player:set_physics_override({ gravity = 1 })
+                end
+            end
+        end
+    end
+    minetest.after(WATER_WALK_INTERVAL, water_walk_tick)
+end
+minetest.after(WATER_WALK_INTERVAL, water_walk_tick)
 
+-- ============================================================
+-- Globalstep: wall-phasing + scout
+-- ============================================================
 minetest.register_globalstep(function(dtime)
-    -- ---- Water walking tick ----
-    wt_timer = wt_timer + dtime
-    local do_wt = wt_timer >= WATER_WALK_INTERVAL
-    if do_wt then wt_timer = 0 end
-
     for _, player in ipairs(minetest.get_connected_players()) do
         local name = player:get_player_name()
         local pos  = player:get_pos()
@@ -659,32 +685,6 @@ minetest.register_globalstep(function(dtime)
                 end
             end
             prev_place[name] = is_placing
-        end
-
-        -- ========== WATER WALKING (hakama) ==========
-        if hakama_users[name] and do_wt then
-            local controls = player:get_player_control()
-
-            -- Detect water at feet level (small range around player base)
-            local function node_at(y_off)
-                local n = minetest.get_node({ x = pos.x, y = pos.y + y_off, z = pos.z })
-                local d = minetest.registered_nodes[n.name]
-                return d and d.liquidtype ~= "none"
-            end
-            local on_water = node_at(-0.1) or node_at(0.0) or node_at(0.3)
-
-            local moving = controls.up or controls.down or controls.left or controls.right
-
-            if on_water and moving and controls.aux1 then
-                -- Pin the player to the water surface: cancel Y velocity entirely
-                local vel = player:get_velocity()
-                if vel and vel.y ~= 0 then
-                    player:add_velocity({ x = 0, y = -vel.y, z = 0 })
-                end
-                player:set_physics_override({ gravity = 0 })
-            else
-                player:set_physics_override({ gravity = 1 })
-            end
         end
 
         end  -- pos guard

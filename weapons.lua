@@ -67,6 +67,8 @@ local frozen_entities = {}   -- objref hash → { timer, glow, obj, ice_ent }
 
 local ZERO_VEL = { x = 0, y = 0, z = 0 }
 
+local unfreeze_entity  -- forward declaration
+
 local function freeze_entity(obj)
     local id = obj:get_luaentity() and tostring(obj:get_luaentity()) or tostring(obj)
 
@@ -131,15 +133,16 @@ local function freeze_entity(obj)
         max_hear_distance = 16,
     }, true)
 
-    frozen_entities[id] = {
+    local data = {
         obj     = obj,
-        timer   = SHURIKEN_FREEZE_TIME,
         glow    = glow,
         ice_ent = ice_ent,
     }
+    frozen_entities[id] = data
+    minetest.after(SHURIKEN_FREEZE_TIME, unfreeze_entity, id, data)
 end
 
-local function unfreeze_entity(id, data)
+unfreeze_entity = function(id, data)
     local obj = data.obj
 
     -- Detach and remove ice block (it is a child of the mob)
@@ -171,18 +174,12 @@ local function unfreeze_entity(id, data)
     frozen_entities[id] = nil
 end
 
--- Tick frozen timers; also keep velocity locked while frozen
+-- Keep velocity locked while frozen (unfreeze is scheduled via minetest.after)
 minetest.register_globalstep(function(dtime)
     for id, data in pairs(frozen_entities) do
-        data.timer = data.timer - dtime
-
         local obj = data.obj
         if obj and obj:get_pos() then
             obj:set_velocity(ZERO_VEL)
-        end
-
-        if data.timer <= 0 then
-            unfreeze_entity(id, data)
         end
     end
 end)
@@ -806,17 +803,15 @@ minetest.register_craftitem("sns:ice_shuriken", {
 -- ============================================================
 
 -- Brief stun table (separate from ice freeze so they don't conflict)
-local stunned_entities = {}  -- id → { obj, timer }
+local stunned_entities = {}  -- id → { obj, old_glow }
+
+local unstun_entity  -- forward declaration
 
 local function stun_entity(obj, duration)
     if not obj or not obj:get_pos() then return end
     local id = obj:get_luaentity() and tostring(obj:get_luaentity()) or tostring(obj)
     if stunned_entities[id] then
-        -- Extend stun if longer
-        if duration > stunned_entities[id].timer then
-            stunned_entities[id].timer = duration
-        end
-        return
+        return  -- already stunned; minetest.after will handle unstun
     end
 
     local lua = obj:get_luaentity()
@@ -834,11 +829,12 @@ local function stun_entity(obj, duration)
     obj:set_velocity(ZERO_VEL)
     obj:set_properties({ glow = math.max((obj:get_properties().glow or 0), 14) })
 
-    stunned_entities[id] = { obj = obj, timer = duration,
-        old_glow = obj:get_properties().glow or 0 }
+    local sdata = { obj = obj, old_glow = obj:get_properties().glow or 0 }
+    stunned_entities[id] = sdata
+    minetest.after(duration, unstun_entity, id, sdata)
 end
 
-local function unstun_entity(id, data)
+unstun_entity = function(id, data)
     local obj = data.obj
     if obj and obj:get_pos() then
         obj:set_properties({ glow = data.old_glow })
@@ -858,16 +854,12 @@ local function unstun_entity(id, data)
     stunned_entities[id] = nil
 end
 
--- Tick stun timers + keep velocity locked
+-- Keep velocity locked while stunned (unstun is scheduled via minetest.after)
 minetest.register_globalstep(function(dtime)
     for id, data in pairs(stunned_entities) do
-        data.timer = data.timer - dtime
         local obj = data.obj
         if obj and obj:get_pos() then
             obj:set_velocity(ZERO_VEL)
-        end
-        if data.timer <= 0 then
-            unstun_entity(id, data)
         end
     end
 end)
