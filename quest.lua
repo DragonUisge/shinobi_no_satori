@@ -528,7 +528,7 @@ local function on_all_bosses_defeated(player_name)
                 "The beast falls silent. Its essence scatters into the void.\n"
                 .. "You have endured the trial... but the shadows stir once more.\n"
                 .. "A new offering emerges from the ancient chest.",
-                0x80DEEA, 7)
+                0x4FC3F7, 7)
         end
     else
         pdata.stage = "quest_complete"
@@ -649,8 +649,8 @@ minetest.register_on_player_receive_fields(function(player, formname, fields)
             alignment = { x = 0, y = 0 },
             size      = { x = 1, y = 1 },
         })
-        -- 5 s dramatic pause → swap arena → 5 s for chunk load → spawn boss
-        minetest.after(5, function(pn, h)
+        -- 2 s dramatic pause → swap arena → 5 s for chunk load → spawn boss
+        minetest.after(2, function(pn, h)
             local pl = minetest.get_player_by_name(pn)
             if pl then pl:hud_remove(h) end
             local pd = quest_data[pn]
@@ -903,7 +903,7 @@ minetest.register_globalstep(function(dtime)
                             local msg = out_reason == "player"
                                 and "The arena holds you. There is no escape from the trial."
                                 or  "The beast is drawn back by an unseen force."
-                            show_hud(player, msg, 0xEF9A9A, 4)
+                            show_hud(player, msg, 0x4FC3F7, 4)
                         end
                     end
                 end  -- victory/despawn/boundary block
