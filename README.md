@@ -9,7 +9,7 @@ Adds a new big Japanese-styled arena for the quest.
 A new quest to obtain the special ninja armour.
 
 ## New Armour with abilities
-- **Headwear of Shinobi** (sns:epic_headwear): Grants night vision, and by pressing `Sneak + Right-click` on a wall, the player can pass through it.
+- **Headwear of Shinobi** (sns:epic_headwear): Grants night vision, and by pressing `Sneak + Right-click` on a wall, the player can pass through it. **Echolocation**: press `Sneak + Left-click` to activate. The text above every mob that is in range of 16 blocks around the player will show if the mob is hostile, it's maximal and current health points, and whether is aware of the player `[!!]`.
 - **Chestplate of Shinobi** (sns:epic_chestplate): Grants an attack bonus and reduces fall damage (configurable, see: Configuration).
 - **Hakama of Shinobi** (sns:epic_hakama): Grants a speed boost (also configurable) and the ability to sprint across water.
 
@@ -18,22 +18,22 @@ A new quest to obtain the special ninja armour.
 - **Shuriken of Ice** (sns:ice_shuriken): Same as fire shuriken, but instead freezes enemies.
 - **Shuriken of Thunder** (sns:lightning_shuriken): Stuns the primary target and arcs to up to 2 nearby enemies, dealing reduced chain damage to each.
 
-# New Dungeon
+## New Dungeon
 After the player has completed the main quest, the player may access a custom dungeon.
 
-## How to Enter and Complete the Dungeon
+### How to Enter and Complete the Dungeon
 
 1. **Type `/dungeon` in chat** to enter the Shinobi Dungeon. The first time the player uses this command, a dungeon will be generated 100 blocks below the player's current position. The player will be teleported to the entrance.
 2. **Survive and progress through the dungeon** by avoiding or overcoming traps and hazards. Use your ninja skills and equipment to your advantage!
 3. **Reach the reward chest** at the end. Each player can claim the reward only once.
 4. **Leave the dungeon**: The player's progress and rewards are saved. If the player leaves the dungeon area or disconnects, the player's special privileges (fly/noclip) will be restored automatically.
 
-### Tips for Players
+#### Tips for Players
 - Watch your step! Many floors and walls are trapped.
 - Some obstacles (like sand walls) can only be bypassed with the Headwear of Shinobi.
 - The player cannot fly or noclip inside the dungeon — face the challenge head-on.
 
-## Dungeon Traps & Mechanics
+### Dungeon Traps & Mechanics
 
 The dungeon is filled with unique traps and mechanics:
 
@@ -44,14 +44,14 @@ The dungeon is filled with unique traps and mechanics:
 - **sns:dungeon_zone** — Dungeon Zone Marker: Invisible node marking the dungeon area. While inside, players lose fly and noclip privileges (restored on exit).
 - **sns:dungeon_chest** — Dungeon Reward Chest: One-time reward chest. Each player can claim elite armour, shurikens, and the JONIN rank once.
 
-### Dungeon Mechanics
+#### Dungeon Mechanics
 
 - **/dungeon** — Teleports the player into the dungeon.
 - **Progress saving** — The player's dungeon progress and claimed rewards are saved per player.
 - **Privilege restoration** — Fly/noclip privileges are automatically restored when the player leaves the dungeon or disconnects.
 - **Reward chest** — Grants a full set of elite armour, 50 of each shuriken type, and the JONIN rank (displayed in the player's nametag).
 
-#### Example trap nodes in a dungeon schematic:
+##### Example trap nodes in a dungeon schematic:
 ```
 sns:spike_floor      # spike floor
 sns:collapse_floor   # crumbling floor
@@ -137,4 +137,9 @@ All commands require the `server` privilege.
 
 # Release log
 
-### Initial release v1.1.0
+### Release v1.2.0
+- Fixed chest bug
+- Added echolocation
+
+### Release v1.1.0
+- Initial release

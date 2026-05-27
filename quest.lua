@@ -19,14 +19,14 @@
 --   the engine unloaded the chunk), it is considered despawned, NOT killed.
 --   A respawn is scheduled instead.  Only HP reaching ≤ 0 counts as a kill.
 
-local modpath   = minetest.get_modpath("sns")
-local worldpath = minetest.get_worldpath()
+local modpath             = minetest.get_modpath("sns")
+local worldpath           = minetest.get_worldpath()
 
 -- ============================================================
 -- Persistence
 -- ============================================================
 local quest_progress_file = worldpath .. "/sns_quest_progress.json"
-local quest_data = {}
+local quest_data          = {}
 
 local function save_progress()
     local file = io.open(quest_progress_file, "w")
@@ -68,34 +68,34 @@ load_progress()
 -- ============================================================
 -- Arena geometry  (schematic dimensions: X=117, Y=53, Z=59)
 -- ============================================================
-local ARENA_W      = 117   -- schematic X size
-local ARENA_D      =  59   -- schematic Z size
-local ARENA_H      =  53   -- schematic Y size
-local ARENA_MARGIN =   5   -- containment inset from each wall
-local ARENA_FLOOR  =   4   -- Y offset of walkable floor above structure_pos
+local ARENA_W      = 117 -- schematic X size
+local ARENA_D      = 59  -- schematic Z size
+local ARENA_H      = 53  -- schematic Y size
+local ARENA_MARGIN = 5   -- containment inset from each wall
+local ARENA_FLOOR  = 4   -- Y offset of walkable floor above structure_pos
 
 -- structure_pos is the bottom-left-front corner placed by minetest.place_schematic.
 -- Centre of the arena floor:
 local function arena_center(sp)
     return {
-        x = sp.x + math.floor(ARENA_W / 2),   -- 58
+        x = sp.x + math.floor(ARENA_W / 2), -- 58
         y = sp.y + ARENA_FLOOR + 1,
-        z = sp.z + math.floor(ARENA_D / 2),   -- 29
+        z = sp.z + math.floor(ARENA_D / 2), -- 29
     }
 end
 
 local function in_arena(pos, sp)
     return pos.x >= sp.x + ARENA_MARGIN
-       and pos.x <= sp.x + ARENA_W - ARENA_MARGIN
-       and pos.z >= sp.z + ARENA_MARGIN
-       and pos.z <= sp.z + ARENA_D - ARENA_MARGIN
-       and pos.y >= sp.y - 2
-       and pos.y <= sp.y + ARENA_H + 4
+        and pos.x <= sp.x + ARENA_W - ARENA_MARGIN
+        and pos.z >= sp.z + ARENA_MARGIN
+        and pos.z <= sp.z + ARENA_D - ARENA_MARGIN
+        and pos.y >= sp.y - 2
+        and pos.y <= sp.y + ARENA_H + 4
 end
 
 local function load_arena(sp)
     minetest.load_area(
-        { x = sp.x - 5,          y = sp.y - 5,          z = sp.z - 5 },
+        { x = sp.x - 5, y = sp.y - 5, z = sp.z - 5 },
         { x = sp.x + ARENA_W + 5, y = sp.y + ARENA_H + 5, z = sp.z + ARENA_D + 5 }
     )
 end
@@ -110,26 +110,26 @@ local function find_spawn_pos(sp)
     local cz = sp.z + math.floor(ARENA_D / 2)
     local found_solid = false
     for dy = 0, ARENA_H + 2 do
-        local node = minetest.get_node({x = cx, y = sp.y + dy, z = cz})
+        local node = minetest.get_node({ x = cx, y = sp.y + dy, z = cz })
         if node.name ~= "ignore" then
             local ndef     = minetest.registered_nodes[node.name]
             local is_solid = (ndef == nil) or (ndef.walkable ~= false)
             if is_solid then
                 found_solid = true
             elseif found_solid then
-                local node2  = minetest.get_node({x = cx, y = sp.y + dy + 1, z = cz})
+                local node2 = minetest.get_node({ x = cx, y = sp.y + dy + 1, z = cz })
                 if node2.name ~= "ignore" then
                     local ndef2     = minetest.registered_nodes[node2.name]
                     local is_solid2 = (ndef2 == nil) or (ndef2.walkable ~= false)
                     if not is_solid2 then
-                        return {x = cx, y = sp.y + dy, z = cz}
+                        return { x = cx, y = sp.y + dy, z = cz }
                     end
                 end
                 found_solid = true
             end
         end
     end
-    return {x = cx, y = sp.y + ARENA_FLOOR + 1, z = cz}
+    return { x = cx, y = sp.y + ARENA_FLOOR + 1, z = cz }
 end
 
 -- ============================================================
@@ -157,21 +157,21 @@ end
 local boss_pool = {}
 
 local boss_blacklist = {
-    ["__builtin:item"]                  = true,
-    ["__builtin:falling_node"]          = true,
-    ["sns:wall_ghost"]    = true,
-    ["sns:fire_shuriken"] = true,
-    ["sns:ice_shuriken"]  = true,
-    ["waterdragon:rare_water_dragon"]   = true,
-    ["pochie_mod:pochie"]               = true,
+    ["__builtin:item"]                = true,
+    ["__builtin:falling_node"]        = true,
+    ["sns:wall_ghost"]                = true,
+    ["sns:fire_shuriken"]             = true,
+    ["sns:ice_shuriken"]              = true,
+    ["waterdragon:rare_water_dragon"] = true,
+    ["pochie_mod:pochie"]             = true,
 }
 
 local function get_entity_hp(def)
-    if type(def.max_health)  == "number" and def.max_health  > 0 then return def.max_health  end
-    if type(def.hp_max)      == "number" and def.hp_max      > 0 then return def.hp_max      end
-    if type(def.max_hp)      == "number" and def.max_hp      > 0 then return def.max_hp      end
-    if type(def.hp)          == "number" and def.hp          > 0 then return def.hp          end
-    if type(def.health)      == "number" and def.health      > 0 then return def.health      end
+    if type(def.max_health) == "number" and def.max_health > 0 then return def.max_health end
+    if type(def.hp_max) == "number" and def.hp_max > 0 then return def.hp_max end
+    if type(def.max_hp) == "number" and def.max_hp > 0 then return def.max_hp end
+    if type(def.hp) == "number" and def.hp > 0 then return def.hp end
+    if type(def.health) == "number" and def.health > 0 then return def.health end
     if def.initial_properties then
         local ip = def.initial_properties
         if type(ip.hp_max) == "number" and ip.hp_max > 0 then return ip.hp_max end
@@ -184,12 +184,14 @@ end
 -- Vague heuristics (keyword names, "has animations") are intentionally excluded.
 local function is_monster(def)
     -- 1. Mobs Redo / MineClone / most mods: explicit type field
-    if def.type == "monster"   then return true end
+    if def.type == "monster" then return true end
     -- 2. Explicit hostile flag used by some frameworks
-    if def.hostile == true     then return true end
+    if def.hostile == true then return true end
     -- 3. Mobs Redo pattern: requires BOTH damage > 0 AND an attack_type
     if type(def.damage) == "number" and def.damage > 0
-       and def.attack_type and def.attack_type ~= "" then return true end
+        and def.attack_type and def.attack_type ~= "" then
+        return true
+    end
     -- 4. Creatura / custom mobs: utility_stack contains attack/fight/melee AND has HP
     if def.utility_stack and type(def.utility_stack) == "table" then
         local hp = get_entity_hp(def)
@@ -243,10 +245,14 @@ minetest.register_on_mods_loaded(function()
 
     for _, c in ipairs(candidates) do
         local count
-        if     c.hp >= 1000 then count = 1
-        elseif c.hp >=  500 then count = 2
-        elseif c.hp >=  200 then count = 3
-        else                     count = 4
+        if c.hp >= 1000 then
+            count = 1
+        elseif c.hp >= 500 then
+            count = 2
+        elseif c.hp >= 200 then
+            count = 3
+        else
+            count = 4
         end
         table.insert(boss_pool, { entity = c.name, count = count, hp = c.hp })
     end
@@ -261,7 +267,7 @@ minetest.register_on_mods_loaded(function()
             if not (boss_blacklist[name] or name:find("^sns:")) then
                 local hp = get_entity_hp(def)
                 if hp and hp >= 80
-                   and type(def.damage) == "number" and def.damage > 0 then
+                    and type(def.damage) == "number" and def.damage > 0 then
                     table.insert(fb_candidates, { name = name, hp = hp })
                 end
             end
@@ -269,7 +275,7 @@ minetest.register_on_mods_loaded(function()
         table.sort(fb_candidates, function(a, b) return a.hp > b.hp end)
         for _, c in ipairs(fb_candidates) do
             local count = (c.hp >= 1000) and 1 or (c.hp >= 500) and 2
-                       or (c.hp >= 200)  and 3 or 4
+                or (c.hp >= 200) and 3 or 4
             table.insert(boss_pool, { entity = c.name, count = count, hp = c.hp })
         end
     end
@@ -299,10 +305,10 @@ local colour = minetest.settings:get("sns.armour_colour")
 -- ============================================================
 local quest_rewards = {
     {
-        item  = "sns:epic_chestplate",
-        name  = "Chestplate of Shinobi",
-        image = "sns_chestplate_inv_".. (colour or "cyan") ..".png",
-        desc  = {
+        item     = "sns:epic_chestplate",
+        name     = "Chestplate of Shinobi",
+        image    = "sns_chestplate_inv_" .. (colour or "cyan") .. ".png",
+        desc     = {
             "Forged in the dying breath of a fallen warlord,",
             "this chestplate pulses with an ancient fury.",
             "Those who wear it feel the rage of a thousand",
@@ -315,10 +321,10 @@ local quest_rewards = {
             .. "You feel your strikes grow heavier — deadlier.",
     },
     {
-        item  = "sns:epic_headwear",
-        name  = "Headwear of Shinobi",
-        image = "sns_headwear_inv_".. (colour or "cyan") ..".png",
-        desc  = {
+        item     = "sns:epic_headwear",
+        name     = "Headwear of Shinobi",
+        image    = "sns_headwear_inv_" .. (colour or "cyan") .. ".png",
+        desc     = {
             "Woven from the threads of twilight itself,",
             "this mask once veiled the face of a phantom",
             "who walked between worlds unseen,",
@@ -332,10 +338,10 @@ local quest_rewards = {
             .. "The night opens its eyes — and you see through them.",
     },
     {
-        item  = "sns:epic_hakama",
-        name  = "Hakama of Shinobi",
-        image = "sns_hakama_inv_".. (colour or "cyan") ..".png",
-        desc  = {
+        item     = "sns:epic_hakama",
+        name     = "Hakama of Shinobi",
+        image    = "sns_hakama_inv_" .. (colour or "cyan") .. ".png",
+        desc     = {
             "Cut from the silk of a river spirit's robe,",
             "these hakama remember the dance of currents.",
             "Water is no longer an obstacle — it becomes",
@@ -376,13 +382,13 @@ end
 local active_bosses = {}
 
 -- Per-player HUD warn cooldowns (boolean flag cleared by minetest.after).
-local warn_cooldown = {}  -- player_name → true while on cooldown
+local warn_cooldown = {} -- player_name → true while on cooldown
 
 local function can_warn(pname)
     return not warn_cooldown[pname]
 end
 local function set_warn_cooldown(pname, ticks)
-    local seconds = (ticks or 12) * 0.5  -- ticks were 0.5s each
+    local seconds = (ticks or 12) * 0.5 -- ticks were 0.5s each
     warn_cooldown[pname] = true
     minetest.after(seconds, function()
         warn_cooldown[pname] = nil
@@ -398,7 +404,7 @@ local function do_spawn_boss(player_name)
     local pdata = quest_data[player_name]
     if not pdata or not pdata.structure_pos or pdata.stage ~= "fighting_boss" then return end
 
-    local sp     = pdata.structure_pos
+    local sp = pdata.structure_pos
     load_arena(sp)
 
     -- Use dynamic floor scan so bosses land on the actual walkable floor,
@@ -417,7 +423,7 @@ local function do_spawn_boss(player_name)
         local node_at = minetest.get_node(bpos).name
         minetest.log("action", ("[sns] Trying add_entity %s at %s (node=%s)"):format(
             entity, minetest.pos_to_string(bpos), node_at))
-        local obj  = minetest.add_entity(bpos, entity)
+        local obj = minetest.add_entity(bpos, entity)
         if obj then
             table.insert(spawned, { obj = obj, last_hp = obj:get_hp() or 100, last_pos = bpos, killed = false })
             minetest.log("action",
@@ -456,8 +462,8 @@ local function do_spawn_boss(player_name)
             ab.respawning        = false
             pdata._spawn_retries = nil
             -- Advance quest so the player isn't permanently stuck
-            local ri = pdata.reward_index or 1
-            pdata.reward_index = ri + 1
+            local ri             = pdata.reward_index or 1
+            pdata.reward_index   = ri + 1
             if quest_rewards[ri + 1] then
                 pdata.stage = "chest_spawned"
                 swap_arena(player_name, "sns_arena_chest.mts")
@@ -497,10 +503,10 @@ local function start_boss_fight(player_name)
     minetest.log("action", "[sns] Chosen boss for " .. player_name
         .. ": " .. boss_info.entity .. " (HP=" .. boss_info.hp .. ") x" .. boss_info.count)
 
-    pdata.boss_entity  = boss_info.entity
-    pdata.boss_count   = boss_info.count
-    pdata.boss_kills   = 0          -- persistent kill counter
-    pdata.stage        = "fighting_boss"
+    pdata.boss_entity = boss_info.entity
+    pdata.boss_count  = boss_info.count
+    pdata.boss_kills  = 0 -- persistent kill counter
+    pdata.stage       = "fighting_boss"
     save_progress()
 
     -- Create tracking entry *before* spawning so the globalstep never sees nil
@@ -553,21 +559,21 @@ end
 -- Quest chest node
 -- ============================================================
 minetest.register_node("sns:quest_chest", {
-    description            = "Ancient Chest",
-    drawtype               = "nodebox",
-    not_in_creative_inventory = true,
-    stack_max              = 1,
-    node_box               = { type = "fixed", fixed = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 } },
-    tiles = {
+    description               = "Ancient Chest",
+    not_in_creative_inventory = 1,
+    drawtype                  = "nodebox",
+    stack_max                 = 1,
+    node_box                  = { type = "fixed", fixed = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 } },
+    tiles                     = {
         "sns_quest_chest_top.png",
         "sns_quest_chest_side.png", "sns_quest_chest_side.png",
         "sns_quest_chest_side.png", "sns_quest_chest_side.png",
         "sns_quest_chest_front.png",
     },
-    paramtype2 = "facedir",
-    groups     = { choppy = 2, oddly_breakable_by_hand = 1, chest = 1 },
+    paramtype2                = "facedir",
+    groups                    = { choppy = 2, oddly_breakable_by_hand = 1, chest = 1, not_in_creative_inventory = 1 },
 
-    on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
+    on_rightclick             = function(pos, node, clicker, itemstack, pointed_thing)
         local pname = clicker:get_player_name()
         local pdata = quest_data[pname]
         if not pdata or pdata.stage ~= "chest_spawned" then return end
@@ -599,11 +605,15 @@ minetest.register_node("sns:quest_chest", {
 
         -- Give item immediately
         local inv = clicker:get_inventory()
-        if inv:room_for_item("main", reward.item) then
-            inv:add_item("main", reward.item)
+        local stack = ItemStack(reward.item)
+        if inv:room_for_item("main", stack) then
+            inv:add_item("main", stack)
+            minetest.log("action", "[sns] " .. pname .. " received: " .. stack:to_string())
         else
-            minetest.item_drop(ItemStack(reward.item), nil, clicker:get_pos())
+            minetest.item_drop(stack, nil, clicker:get_pos())
+            minetest.chat_send_player(pname, "Inventory full! Item dropped at your feet: " .. stack:to_string())
         end
+        minetest.log("action", "[sns] Gave reward: " .. stack:to_string() .. " to " .. pname)
 
         -- Remove chest
         minetest.set_node(pos, { name = "air" })
@@ -621,14 +631,14 @@ minetest.register_node("sns:quest_chest", {
 -- ============================================================
 minetest.register_on_player_receive_fields(function(player, formname, fields)
     if formname ~= "sns:chest_reward" then return false end
-    if not fields.close_btn and not fields.quit     then return true  end
+    if not fields.close_btn and not fields.quit then return true end
 
     local pname = player:get_player_name()
     local pdata = quest_data[pname]
     if not pdata or pdata.stage ~= "received_reward" then return true end
 
-    local hud_text = pdata._pending_hud   or ""
-    local is_last  = pdata._is_last_reward
+    local hud_text        = pdata._pending_hud or ""
+    local is_last         = pdata._is_last_reward
     pdata._pending_hud    = nil
     pdata._is_last_reward = nil
 
@@ -707,11 +717,10 @@ minetest.register_on_joinplayer(function(player)
             save_progress()
             spawn_quest_structure(pl)
         end, pname, hid)
-
     elseif quest_data[pname].stage == "received_reward" then
         -- Server restarted while formspec was open: treat as closed,
         -- start boss fight directly (item was already given).
-        local pdata = quest_data[pname]
+        local pdata           = quest_data[pname]
         pdata._pending_hud    = nil
         pdata._is_last_reward = nil
         if pdata._is_last_reward then
@@ -736,175 +745,172 @@ local function quest_tick()
         local pdata = quest_data[pname]
         if not pdata then
             -- nothing to do for this player
-        -- --------------------------------------------------------
-        -- Stage: waiting for player to arrive at arena
-        -- --------------------------------------------------------
+            -- --------------------------------------------------------
+            -- Stage: waiting for player to arrive at arena
+            -- --------------------------------------------------------
         elseif pdata.stage == "started" and pdata.structure_pos then
             local pp = player:get_pos()
             local sp = pdata.structure_pos
             if pp.y >= sp.y - 5 and pp.y <= sp.y + ARENA_H + 10
-               and math.abs(pp.x - (sp.x + math.floor(ARENA_W / 2))) < ARENA_W
-               and math.abs(pp.z - (sp.z + math.floor(ARENA_D / 2))) < ARENA_D then
+                and math.abs(pp.x - (sp.x + math.floor(ARENA_W / 2))) < ARENA_W
+                and math.abs(pp.z - (sp.z + math.floor(ARENA_D / 2))) < ARENA_D then
                 pdata.stage = "chest_spawned"
                 save_progress()
                 minetest.log("action", "[sns] " .. pname .. " reached the arena.")
             end
 
-        -- --------------------------------------------------------
-        -- Stage: active boss fight
-        -- --------------------------------------------------------
+            -- --------------------------------------------------------
+            -- Stage: active boss fight
+            -- --------------------------------------------------------
         elseif pdata.stage == "fighting_boss" then
             local sp = pdata.structure_pos
             if not sp then
                 -- no arena position recorded; nothing to do
             else
+                -- Keep arena loaded
+                load_arena(sp)
 
-            -- Keep arena loaded
-            load_arena(sp)
+                local ab = active_bosses[pname]
 
-            local ab = active_bosses[pname]
+                -- ---- Server-restart recovery: no in-memory tracking ----
+                if not ab then
+                    -- Were all bosses already killed before the restart?
+                    if (pdata.boss_kills or 0) >= (pdata.boss_count or 1) then
+                        on_all_bosses_defeated(pname)
+                    else
+                        local center   = arena_center(sp)
+                        local expected = pdata.boss_entity
+                        local found    = {}
+                        if expected then
+                            for _, obj in ipairs(minetest.get_objects_inside_radius(center, 80)) do
+                                local ent = obj:get_luaentity()
+                                if ent and ent.name == expected then
+                                    local hp = obj:get_hp() or 0
+                                    if hp > 0 then
+                                        table.insert(found, { obj = obj, last_hp = hp, killed = false })
+                                    end
+                                end
+                            end
+                        end
+                        if #found > 0 then
+                            active_bosses[pname] = { bosses = found, respawning = false }
+                            minetest.log("action", "[sns] Reclaimed " .. #found
+                                .. " boss(es) for " .. pname .. " after restart")
+                        else
+                            active_bosses[pname] = { bosses = {}, respawning = true }
+                            minetest.log("warning", "[sns] No bosses found after restart for "
+                                .. pname .. " — respawning")
+                            minetest.after(2, do_spawn_boss, pname)
+                        end
+                        ab = active_bosses[pname]
+                    end
+                end
 
-            -- ---- Server-restart recovery: no in-memory tracking ----
-            if not ab then
-                -- Were all bosses already killed before the restart?
-                if (pdata.boss_kills or 0) >= (pdata.boss_count or 1) then
-                    on_all_bosses_defeated(pname)
-                else
-                    local center   = arena_center(sp)
-                    local expected = pdata.boss_entity
-                    local found    = {}
-                    if expected then
-                        for _, obj in ipairs(minetest.get_objects_inside_radius(center, 80)) do
-                            local ent = obj:get_luaentity()
-                            if ent and ent.name == expected then
-                                local hp = obj:get_hp() or 0
-                                if hp > 0 then
-                                    table.insert(found, { obj = obj, last_hp = hp, killed = false })
+                -- ---- Process boss list (ab may be freshly set above) ----
+                if ab then
+                    -- Classify each boss as: alive | just-killed | despawned.
+                    local alive       = {}
+                    local n_killed    = 0
+                    local n_despawned = 0
+
+                    for _, b in ipairs(ab.bosses) do
+                        if not b.killed then
+                            local pos = b.obj:get_pos()
+                            if pos then
+                                local hp = b.obj:get_hp() or 0
+                                if hp <= 0 then
+                                    b.killed = true
+                                    n_killed = n_killed + 1
+                                    pcall(function() b.obj:remove() end)
+                                else
+                                    b.last_hp  = hp
+                                    b.last_pos = pos
+                                    table.insert(alive, b)
+                                end
+                            else
+                                local lp = b.last_pos
+                                if (b.last_hp or 1) <= 0
+                                    or (lp and in_arena(lp, sp)) then
+                                    b.killed = true
+                                    n_killed = n_killed + 1
+                                else
+                                    n_despawned = n_despawned + 1
                                 end
                             end
                         end
                     end
-                    if #found > 0 then
-                        active_bosses[pname] = { bosses = found, respawning = false }
-                        minetest.log("action", "[sns] Reclaimed " .. #found
-                            .. " boss(es) for " .. pname .. " after restart")
-                    else
-                        active_bosses[pname] = { bosses = {}, respawning = true }
-                        minetest.log("warning", "[sns] No bosses found after restart for "
-                            .. pname .. " — respawning")
-                        minetest.after(2, do_spawn_boss, pname)
+
+                    ab.bosses = alive
+
+                    if n_killed > 0 then
+                        pdata.boss_kills = (pdata.boss_kills or 0) + n_killed
+                        save_progress()
                     end
-                    ab = active_bosses[pname]
-                end
-            end
 
-            -- ---- Process boss list (ab may be freshly set above) ----
-            if ab then
-                -- Classify each boss as: alive | just-killed | despawned.
-                local alive       = {}
-                local n_killed    = 0
-                local n_despawned = 0
-
-                for _, b in ipairs(ab.bosses) do
-                    if not b.killed then
-                        local pos = b.obj:get_pos()
-                        if pos then
-                            local hp = b.obj:get_hp() or 0
-                            if hp <= 0 then
-                                b.killed  = true
-                                n_killed  = n_killed + 1
-                                pcall(function() b.obj:remove() end)
-                            else
-                                b.last_hp  = hp
-                                b.last_pos = pos
-                                table.insert(alive, b)
+                    -- ---- Victory check ----
+                    local kills_needed = pdata.boss_count or 1
+                    if (pdata.boss_kills or 0) >= kills_needed and not ab.respawning then
+                        on_all_bosses_defeated(pname)
+                    else
+                        -- ---- Despawn: schedule respawn ----
+                        if n_despawned > 0 and not ab.respawning then
+                            ab.respawning = true
+                            if can_warn(pname) then
+                                set_warn_cooldown(pname)
+                                show_hud(player,
+                                    "The beast dissolves into shadow...\n"
+                                    .. "But the darkness is not so easily escaped.\n"
+                                    .. "It gathers again within the arena.",
+                                    0x29B6F6, 5)
                             end
+                            minetest.after(4, function(pn)
+                                local pd = quest_data[pn]
+                                if pd and pd.stage == "fighting_boss" then
+                                    do_spawn_boss(pn)
+                                end
+                            end, pname)
+                        end
+
+                        -- ---- Boundary enforcement ----
+                        local pp          = player:get_pos()
+                        local player_dead = (player:get_hp() <= 0)
+                        local out_reason  = nil
+
+                        if not player_dead and pp and not in_arena(pp, sp) then
+                            out_reason = "player"
                         else
-                            local lp = b.last_pos
-                            if (b.last_hp or 1) <= 0
-                               or (lp and in_arena(lp, sp)) then
-                                b.killed = true
-                                n_killed = n_killed + 1
-                            else
-                                n_despawned = n_despawned + 1
+                            for _, b in ipairs(alive) do
+                                local bpos = b.obj:get_pos()
+                                if bpos and not in_arena(bpos, sp) then
+                                    out_reason = "boss"
+                                    break
+                                end
                             end
                         end
-                    end
-                end
 
-                ab.bosses = alive
-
-                if n_killed > 0 then
-                    pdata.boss_kills = (pdata.boss_kills or 0) + n_killed
-                    save_progress()
-                end
-
-                -- ---- Victory check ----
-                local kills_needed = pdata.boss_count or 1
-                if (pdata.boss_kills or 0) >= kills_needed and not ab.respawning then
-                    on_all_bosses_defeated(pname)
-                else
-                    -- ---- Despawn: schedule respawn ----
-                    if n_despawned > 0 and not ab.respawning then
-                        ab.respawning = true
-                        if can_warn(pname) then
-                            set_warn_cooldown(pname)
-                            show_hud(player,
-                                "The beast dissolves into shadow...\n"
-                                .. "But the darkness is not so easily escaped.\n"
-                                .. "It gathers again within the arena.",
-                                0x29B6F6, 5)
-                        end
-                        minetest.after(4, function(pn)
-                            local pd = quest_data[pn]
-                            if pd and pd.stage == "fighting_boss" then
-                                do_spawn_boss(pn)
+                        if out_reason then
+                            local c = arena_center(sp)
+                            if out_reason == "player" then
+                                player:set_pos({ x = c.x + 2, y = c.y, z = c.z + 2 })
                             end
-                        end, pname)
-                    end
-
-                    -- ---- Boundary enforcement ----
-                    local pp       = player:get_pos()
-                    local player_dead = (player:get_hp() <= 0)
-                    local out_reason = nil
-
-                    if not player_dead and pp and not in_arena(pp, sp) then
-                        out_reason = "player"
-                    else
-                        for _, b in ipairs(alive) do
-                            local bpos = b.obj:get_pos()
-                            if bpos and not in_arena(bpos, sp) then
-                                out_reason = "boss"
-                                break
+                            for i, b in ipairs(alive) do
+                                if b.obj:get_pos() then
+                                    b.obj:set_pos({ x = c.x - (i - 1) * 3, y = c.y, z = c.z })
+                                end
+                            end
+                            if can_warn(pname) then
+                                set_warn_cooldown(pname)
+                                local msg = out_reason == "player"
+                                    and "The arena holds you. There is no escape from the trial."
+                                    or "The beast is drawn back by an unseen force."
+                                show_hud(player, msg, 0x4FC3F7, 4)
                             end
                         end
-                    end
-
-                    if out_reason then
-                        local c = arena_center(sp)
-                        if out_reason == "player" then
-                            player:set_pos({ x = c.x + 2, y = c.y, z = c.z + 2 })
-                        end
-                        for i, b in ipairs(alive) do
-                            if b.obj:get_pos() then
-                                b.obj:set_pos({ x = c.x - (i - 1) * 3, y = c.y, z = c.z })
-                            end
-                        end
-                        if can_warn(pname) then
-                            set_warn_cooldown(pname)
-                            local msg = out_reason == "player"
-                                and "The arena holds you. There is no escape from the trial."
-                                or  "The beast is drawn back by an unseen force."
-                            show_hud(player, msg, 0x4FC3F7, 4)
-                        end
-                    end
-                end  -- victory/despawn/boundary block
-            end  -- ab guard
-
-            end  -- sp guard
-        end  -- stage elseif
-
-    end  -- player loop
+                    end -- victory/despawn/boundary block
+                end     -- ab guard
+            end         -- sp guard
+        end             -- stage elseif
+    end                 -- player loop
     minetest.after(STEP_INTERVAL, quest_tick)
 end
 minetest.after(STEP_INTERVAL, quest_tick)
@@ -915,7 +921,7 @@ minetest.after(STEP_INTERVAL, quest_tick)
 minetest.register_chatcommand("shintp", {
     description = "Teleport to quest chest or arena.",
     privs       = { server = true },
-    func = function(name)
+    func        = function(name)
         local player = minetest.get_player_by_name(name)
         if not player then return false, "Player not found." end
         local pdata = quest_data[name]
@@ -937,7 +943,7 @@ minetest.register_chatcommand("rquest", {
     description = "Reset Shinobi no Satori quest progress.",
     params      = "[player_name]",
     privs       = { server = true },
-    func = function(name, param)
+    func        = function(name, param)
         local target = (param ~= "" and param) or name
         active_bosses[target] = nil
         if quest_data[target] then
@@ -955,60 +961,60 @@ minetest.register_chatcommand("rquest", {
 minetest.register_chatcommand("shindebug", {
     description = "Print Shinobi quest debug info.",
     privs       = { server = true },
-    func = function(name)
+    func        = function(name)
         local lines = {}
 
         -- Boss pool
         if #boss_pool == 0 then
-            lines[#lines+1] = "§ BOSS POOL: EMPTY — no mobs qualify as bosses!"
+            lines[#lines + 1] = "§ BOSS POOL: EMPTY — no mobs qualify as bosses!"
         else
-            lines[#lines+1] = "§ BOSS POOL (" .. #boss_pool .. " entries):"
+            lines[#lines + 1] = "§ BOSS POOL (" .. #boss_pool .. " entries):"
             for i, b in ipairs(boss_pool) do
-                lines[#lines+1] = ("  #%d %s  HP=%d  count=%d"):format(i, b.entity, b.hp, b.count)
+                lines[#lines + 1] = ("  #%d %s  HP=%d  count=%d"):format(i, b.entity, b.hp, b.count)
             end
         end
 
         -- Quest state for every online player (or just caller if no data)
         local targets = {}
-        for pn, _ in pairs(quest_data) do targets[#targets+1] = pn end
+        for pn, _ in pairs(quest_data) do targets[#targets + 1] = pn end
         if #targets == 0 then
-            lines[#lines+1] = "§ No quest data on record."
+            lines[#lines + 1] = "§ No quest data on record."
         end
         for _, pn in ipairs(targets) do
             local pd = quest_data[pn]
-            lines[#lines+1] = ("§ [%s] stage=%s  reward_idx=%d"):format(
+            lines[#lines + 1] = ("§ [%s] stage=%s  reward_idx=%d"):format(
                 pn, tostring(pd.stage), pd.reward_index or 1)
             if pd.structure_pos then
                 local sp = pd.structure_pos
-                lines[#lines+1] = ("    structure_pos=%s"):format(minetest.pos_to_string(sp))
+                lines[#lines + 1] = ("    structure_pos=%s"):format(minetest.pos_to_string(sp))
                 local c = arena_center(sp)
-                lines[#lines+1] = ("    arena_center=%s"):format(minetest.pos_to_string(c))
+                lines[#lines + 1] = ("    arena_center=%s"):format(minetest.pos_to_string(c))
                 -- Show what node is at spawn pos
                 local spos = find_spawn_pos(sp)
-                lines[#lines+1] = ("    find_spawn_pos=%s  node_there=%s"):format(
+                lines[#lines + 1] = ("    find_spawn_pos=%s  node_there=%s"):format(
                     minetest.pos_to_string(spos),
                     minetest.get_node(spos).name)
-                local node_below = minetest.get_node({x=spos.x, y=spos.y-1, z=spos.z}).name
-                lines[#lines+1] = ("    node_below_spawn=%s"):format(node_below)
+                local node_below = minetest.get_node({ x = spos.x, y = spos.y - 1, z = spos.z }).name
+                lines[#lines + 1] = ("    node_below_spawn=%s"):format(node_below)
             else
-                lines[#lines+1] = "    structure_pos=nil"
+                lines[#lines + 1] = "    structure_pos=nil"
             end
             if pd.stage == "fighting_boss" then
-                lines[#lines+1] = ("    boss_entity=%s  boss_count=%d  boss_kills=%d"):format(
+                lines[#lines + 1] = ("    boss_entity=%s  boss_count=%d  boss_kills=%d"):format(
                     tostring(pd.boss_entity), pd.boss_count or 0, pd.boss_kills or 0)
                 local ab = active_bosses[pn]
                 if ab then
-                    lines[#lines+1] = ("    active_bosses: %d alive, respawning=%s"):format(
+                    lines[#lines + 1] = ("    active_bosses: %d alive, respawning=%s"):format(
                         #ab.bosses, tostring(ab.respawning))
                     for i, b in ipairs(ab.bosses) do
                         local bpos = b.obj and b.obj:get_pos()
-                        lines[#lines+1] = ("      boss#%d pos=%s last_hp=%d killed=%s"):format(
+                        lines[#lines + 1] = ("      boss#%d pos=%s last_hp=%d killed=%s"):format(
                             i,
                             bpos and minetest.pos_to_string(bpos) or "nil(removed)",
                             b.last_hp or 0, tostring(b.killed))
                     end
                 else
-                    lines[#lines+1] = "    active_bosses: nil (in-memory tracking lost)"
+                    lines[#lines + 1] = "    active_bosses: nil (in-memory tracking lost)"
                 end
             end
         end
@@ -1024,7 +1030,7 @@ minetest.register_chatcommand("shindebug", {
 minetest.register_chatcommand("shinspawn", {
     description = "Force (re)spawn boss for current player.",
     privs       = { server = true },
-    func = function(name)
+    func        = function(name)
         local pdata = quest_data[name]
         if not pdata then
             return false, "No quest data."

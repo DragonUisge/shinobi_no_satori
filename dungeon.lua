@@ -597,6 +597,7 @@ minetest.register_node("sns:dungeon_chest", {
     drawtype    = "nodebox",
     stack_max   = 1,
     node_box    = { type = "fixed", fixed = { -0.5, -0.5, -0.5, 0.5, 0.5, 0.5 } },
+    not_in_creative_inventory = 1,
     tiles = {
         "sns_quest_chest_top.png",
         "sns_quest_chest_side.png", "sns_quest_chest_side.png",
@@ -604,7 +605,7 @@ minetest.register_node("sns:dungeon_chest", {
         "sns_quest_chest_front.png",
     },
     paramtype2 = "facedir",
-    groups     = { choppy = 2, oddly_breakable_by_hand = 1 },
+    groups     = { choppy = 2, oddly_breakable_by_hand = 1, not_in_creative_inventory = 1 },
 
     on_rightclick = function(pos, node, clicker, itemstack, pointed_thing)
         local pname = clicker:get_player_name()

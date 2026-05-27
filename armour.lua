@@ -841,11 +841,11 @@ minetest.register_globalstep(function(dtime)
                 if echo_enabled[name] then
                     echo_enabled[name] = nil
                     echo_clear(name)
-                    minetest.chat_send_player(name, "[SNS] Echolocation deactivated.")
+                    minetest.chat_send_player(name, "Echolocation deactivated.")
                 else
                     echo_enabled[name] = true
                     start_echo(name)
-                    minetest.chat_send_player(name, "[SNS] Echolocation activated.")
+                    minetest.chat_send_player(name, "Echolocation activated.")
                 end
             end
             echo_prev_dig[name] = dig_now
