@@ -109,6 +109,7 @@ armor:register_armor("sns:epic_headwear", {
         headwear_users[name] = nil
         -- Remove night vision
         player:override_day_night_ratio(nil)
+        echo_clear(name)
         clear_full_set(player)
     end,
 })
@@ -255,7 +256,7 @@ local function remove_full_set(player)
     end
 end
 
--- Called from each armor on_equip / on_unequip
+-- Called from each armour on_equip / on_unequip
 local function check_full_set(player)
     local name = player:get_player_name()
     if has_full_set(name) then
@@ -354,7 +355,7 @@ local function begin_scout(player)
 
     local black = "character.png^[colorize:#000000:255"
     player:set_properties({ textures = { black } })
-    player:set_armor_groups({ fleshy = 100 })  -- no armor reduction
+    player:set_armor_groups({ fleshy = 100 })  -- no armour reduction
     player:hud_set_flags({ wield = false })
 end
 
@@ -510,7 +511,7 @@ local function spawn_ghost(player, wall_dir)
         if ent then
             ent._owner = name
         end
-        -- Copy skin + armor textures from 3d_armor
+        -- Copy skin + armour textures from 3d_armor
         local tex = { "character.png", "blank.png", "blank.png" }
         if armor and armor.textures then
             local at = armor.textures[name]
@@ -560,6 +561,177 @@ local function remove_ghost(player)
     end)
 end
 
+
+-- ============================================================
+-- Echolocation (headwear passive)
+-- Scans every ECHO_SCAN_INTERVAL seconds while headwear is worn:
+--   • Colored glow particles at nearby mobs (red=hostile, green=passive)
+--   • HUD waypoints above each mob showing: name, type, HP, alert status
+--   • Sonar-ring pulse around the player every ECHO_PULSE_INTERVAL seconds
+-- Note: true block transparency is not possible server-side; particles
+-- and waypoints give the "sonar through walls" feel instead.
+-- ============================================================
+local ECHO_RADIUS        = 16
+local ECHO_SCAN_INTERVAL = 0.5
+local ECHO_PULSE_EVERY   = 4   -- pulse once every N scans (= 2 s)
+
+local echo_huds     = {}   -- [pname][key] = hud_id
+local echo_pulse_n  = {}   -- [pname] = scan counter
+local echo_running  = {}   -- [pname] = true while the loop is alive
+local echo_enabled  = {}   -- [pname] = true when toggled on
+local echo_prev_dig = {}   -- [pname] = previous sneak+dig state (edge detection)
+
+local function echo_entity_key(obj)
+    local lua = obj:get_luaentity()
+    return lua and tostring(lua) or tostring(obj)
+end
+
+local function echo_is_monster(lua)
+    if lua.type == "monster" then return true end
+    if lua.type == "animal"  then return false end
+    if lua.hostile == true   then return true end
+    if lua.attack_type and lua.attack_type ~= "" then return true end
+    if type(lua.damage) == "number" and lua.damage > 0 then return true end
+    return false
+end
+
+local function echo_noticed(lua, pname)
+    if lua.state == "attack" or lua.state == "chase" then return true end
+    for _, field in ipairs({"attack", "_target", "target"}) do
+        local t = lua[field]
+        if type(t) == "userdata" then
+            local ok, n = pcall(function() return t:get_player_name() end)
+            if ok and n == pname then return true end
+        end
+    end
+    return false
+end
+
+local function echo_label(obj, lua, pname)
+    local raw   = lua.name or "?"
+    local disp  = (raw:match(":(.+)$") or raw):gsub("_", " ")
+    disp = disp:sub(1, 1):upper() .. disp:sub(2)
+    local hp    = math.floor(obj:get_hp() or 0)
+    local hpmax = nil
+    for _, f in ipairs({"max_health", "hp_max", "health"}) do
+        if type(lua[f]) == "number" and lua[f] > 0 then hpmax = math.floor(lua[f]); break end
+    end
+    if not hpmax and type(lua.initial_properties) == "table" then
+        local ip = lua.initial_properties
+        if type(ip.hp_max) == "number" then hpmax = math.floor(ip.hp_max) end
+    end
+    local hp_str   = hpmax and (hp .. "/" .. hpmax) or tostring(hp)
+    local type_str = echo_is_monster(lua) and "hostile" or "passive"
+    local alert    = echo_noticed(lua, pname) and "  [!!]" or ""
+    return disp .. alert .. "  |  " .. type_str .. "  HP: " .. hp_str
+end
+
+local function echo_clear(pname)
+    local player = minetest.get_player_by_name(pname)
+    local huds   = echo_huds[pname]
+    if huds and player then
+        for _, hid in pairs(huds) do pcall(player.hud_remove, player, hid) end
+    end
+    echo_huds[pname]     = nil
+    echo_pulse_n[pname]  = nil
+    echo_running[pname]  = nil
+    echo_enabled[pname]  = nil
+    echo_prev_dig[pname] = nil
+end
+
+local function echo_tick(pname)
+    local player = minetest.get_player_by_name(pname)
+    if not player or not echo_enabled[pname] then
+        echo_clear(pname)
+        return
+    end
+
+    local pos = player:get_pos()
+    if not pos then
+        minetest.after(ECHO_SCAN_INTERVAL, echo_tick, pname)
+        return
+    end
+
+    echo_huds[pname]    = echo_huds[pname]    or {}
+    echo_pulse_n[pname] = (echo_pulse_n[pname] or 0) + 1
+    local huds   = echo_huds[pname]
+    local do_pulse = (echo_pulse_n[pname] % ECHO_PULSE_EVERY == 0)
+
+    local seen = {}
+
+    for _, obj in ipairs(minetest.get_objects_inside_radius(pos, ECHO_RADIUS)) do
+        if not obj:is_player() then
+            local lua = obj:get_luaentity()
+            if lua and lua.name
+               and not lua.name:find("^sns:")
+               and not lua.name:find("^__builtin") then
+                local key  = echo_entity_key(obj)
+                local opos = obj:get_pos()
+                if opos then
+                    seen[key] = true
+                    local is_monster = echo_is_monster(lua)
+                    local label = echo_label(obj, lua, pname)
+                    local color = is_monster and 0xFF5555 or 0x55FF88
+                    local wpos  = { x = opos.x, y = opos.y + 2.8, z = opos.z }
+
+                    -- Create or update HUD waypoint
+                    if huds[key] then
+                        player:hud_change(huds[key], "world_pos", wpos)
+                        player:hud_change(huds[key], "name",      label)
+                        player:hud_change(huds[key], "number",    color)
+                    else
+                        huds[key] = player:hud_add({
+                            type      = "waypoint",
+                            name      = label,
+                            text      = "",
+                            number    = color,
+                            world_pos = wpos,
+                            precision = 0,
+                        })
+                    end
+
+                    -- Glow particles on pulse
+                    if do_pulse then
+                        minetest.add_particlespawner({
+                            amount     = 10,
+                            time       = 1.8,
+                            minpos     = vector.add(opos, vector.new(-0.4, 0.1, -0.4)),
+                            maxpos     = vector.add(opos, vector.new( 0.4, 1.8,  0.4)),
+                            minvel     = vector.new(-0.2, 0.4, -0.2),
+                            maxvel     = vector.new( 0.2, 1.2,  0.2),
+                            minacc     = vector.new(0, -0.1, 0),
+                            maxacc     = vector.new(0, -0.1, 0),
+                            minexptime = 0.5, maxexptime = 1.5,
+                            minsize    = 0.25, maxsize   = 0.55,
+                            glow       = 14,
+                            texture    = is_monster
+                                and "sns_fire_particle.png"
+                                or  "sns_ice_particle.png",
+                            playername = pname,
+                        })
+                    end
+                end
+            end
+        end
+    end
+
+    -- Remove waypoints for mobs that left range or despawned
+    for key, hid in pairs(huds) do
+        if not seen[key] then
+            player:hud_remove(hid)
+            huds[key] = nil
+        end
+    end
+
+    minetest.after(ECHO_SCAN_INTERVAL, echo_tick, pname)
+end
+
+local function start_echo(pname)
+    if not echo_running[pname] then
+        echo_running[pname] = true
+        minetest.after(ECHO_SCAN_INTERVAL, echo_tick, pname)
+    end
+end
 
 -- ============================================================
 -- Water walking loop (every WATER_WALK_INTERVAL via minetest.after)
@@ -618,7 +790,7 @@ minetest.register_globalstep(function(dtime)
             prev_scout_key[name] = scout_key
         end
 
-        -- ========== SCOUT: ENFORCE BLACK TEXTURE + BARE ARMOR ==========
+        -- ========== SCOUT: ENFORCE BLACK TEXTURE + BARE ARMOUR ==========
         -- 3d_armor may call update_player_visuals at any time; re-enforce
         -- the black appearance and armor_groups every tick.
         if scout_active[name] then
@@ -627,7 +799,7 @@ minetest.register_globalstep(function(dtime)
             if props.textures and props.textures[1] ~= black then
                 player:set_properties({ textures = { black } })
             end
-            -- Ensure armor gives no protection while in shadow form
+            -- Ensure armour gives no protection while in shadow form
             local ag = player:get_armor_groups()
             if (ag.fleshy or 0) ~= 100 then
                 player:set_armor_groups({ fleshy = 100 })
@@ -660,7 +832,26 @@ minetest.register_globalstep(function(dtime)
             end
         end
 
-        -- ========== WALL PHASING (headwear) ==========
+        -- ========== ECHOLOCATION TOGGLE (headwear: Sneak + LMB) ==========
+        if headwear_users[name] then
+            local ctrl    = player:get_player_control()
+            local dig_now = ctrl.sneak and ctrl.dig
+            local dig_was = echo_prev_dig[name] or false
+            if dig_now and not dig_was then
+                if echo_enabled[name] then
+                    echo_enabled[name] = nil
+                    echo_clear(name)
+                    minetest.chat_send_player(name, "[SNS] Echolocation deactivated.")
+                else
+                    echo_enabled[name] = true
+                    start_echo(name)
+                    minetest.chat_send_player(name, "[SNS] Echolocation activated.")
+                end
+            end
+            echo_prev_dig[name] = dig_now
+        end
+
+        -- ========== WALL PHASING (headwear: Sneak + RMB) ==========
         if headwear_users[name] then
             local controls  = player:get_player_control()
             local is_placing = controls.place
@@ -703,6 +894,7 @@ minetest.register_on_leaveplayer(function(player)
     scout_data[name]       = nil
     prev_place[name]       = nil
     prev_scout_key[name]   = nil
+    echo_clear(name)
     if active_ghosts[name] then
         if active_ghosts[name]:get_pos() then
             active_ghosts[name]:remove()
@@ -818,6 +1010,7 @@ armor:register_armor("sns:elite_headwear", {
         headwear_users[name] = nil
         elite_hw_users[name] = nil
         player:override_day_night_ratio(nil)
+        echo_clear(name)
         clear_full_set(player)
         remove_elite_set(player)
     end,
